@@ -42,3 +42,15 @@ export function categoriesOf(channels: Channel[]): Category[] {
   for (const c of channels) counts.set(groupOf(c), (counts.get(groupOf(c)) ?? 0) + 1)
   return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => a.name.localeCompare(b.name, 'tr'))
 }
+
+/** Special category key for "only my favorites". Cannot clash with a real category name. */
+export const FAVORITES = '\u0000favorites'
+
+/** "TR | Disney+" -> ["TR", "Disney+"], so the title can show a path. */
+export function categoryCrumbs(name: string): string[] {
+  const parts = name
+    .split(/\s*[|>»]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+  return parts.length > 0 ? parts : [name]
+}

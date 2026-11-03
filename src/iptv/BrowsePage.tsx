@@ -1,10 +1,11 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import { Heart, ListPlus, Search, SlidersHorizontal, X } from 'lucide-react'
-import { CategoryRail } from './CategoryRail'
+import { ChevronRight, ListPlus, Search, SlidersHorizontal, X } from 'lucide-react'
+import { CategoryChips, CategorySidebar } from './CategoryRail'
 import { ChannelCard, PosterCard } from './Cards'
-import { KIND_LABEL, type Kind, categoriesOf, groupOf } from './kinds'
+import { FAVORITES, KIND_LABEL, type Kind, categoriesOf, categoryCrumbs, groupOf } from './kinds'
 import type { CardSize } from './prefs'
 import { ProgressiveGrid } from './ProgressiveGrid'
+import { SkeletonGrid } from './Skeletons'
 import { useMedia } from './useMedia'
 
 // Columns fill whatever width is left next to the category list, so the grid always uses the full space.
@@ -43,40 +44,66 @@ function Empty({ icon, children }: { icon: 'add' | 'manage' | 'none'; children: 
   )
 }
 
+/** "Canlı TV > TR > Disney+": where you are. Lives in the page, so it stays visible whether or not the menu is collapsed. */
+function Breadcrumb({ kind, selected }: { kind: Kind; selected: string }) {
+  const trail = [KIND_LABEL[kind], ...(selected === '' ? ['Tümü'] : selected === FAVORITES ? ['Favoriler'] : categoryCrumbs(selected))]
+  return (
+    <nav aria-label="Bulunduğun yer" className="min-w-0">
+      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xl font-semibold sm:text-2xl">
+        {trail.map((crumb, i) => {
+          const last = i === trail.length - 1
+          return (
+            <li key={`${i}-${crumb}`} className="flex min-w-0 items-center gap-1">
+              {i > 0 && <ChevronRight size={18} className="shrink-0 text-[var(--subtle)]" aria-hidden="true" />}
+              <span className={`display truncate ${last ? 'text-[var(--accent)]' : 'text-[var(--ink-2)]'}`} aria-current={last ? 'page' : undefined}>
+                {crumb}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
 export function BrowsePage({ kind }: { kind: Kind }) {
-  const { lists, parts, visible, prefs, current, openItem, isFavorite, toggleFavorite, openManage, catalog, xtream } = useMedia()
+  const { lists, parts, visible, prefs, current, openItem, isFavorite, toggleFavorite, openManage, catalog, xtream, epg } = useMedia()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
-  const [favOnly, setFavOnly] = useState(false)
   const deferred = useDeferredValue(query)
 
   const base = visible[kind]
   const categories = useMemo(() => categoriesOf(base), [base])
-  const activeCategory = categories.some((c) => c.name === category) ? category : ''
+  const favoriteCount = useMemo(() => base.filter((c) => isFavorite(c)).length, [base, isFavorite])
+  const selected = category === '' || category === FAVORITES || categories.some((c) => c.name === category) ? category : ''
 
   const items = useMemo(() => {
     const q = deferred.trim().toLocaleLowerCase('tr')
-    return base.filter(
-      (c) => (!activeCategory || groupOf(c) === activeCategory) && (!q || c.name.toLocaleLowerCase('tr').includes(q)) && (!favOnly || isFavorite(c)),
-    )
-  }, [base, activeCategory, deferred, favOnly, isFavorite])
+    return base.filter((c) => {
+      if (selected === FAVORITES ? !isFavorite(c) : selected !== '' && groupOf(c) !== selected) return false
+      return !q || c.name.toLocaleLowerCase('tr').includes(q)
+    })
+  }, [base, selected, deferred, isFavorite])
 
   const poster = kind !== 'live'
+  const gridClass = poster ? POSTER_GRID[prefs.cardSize] : LIVE_GRID[prefs.cardSize]
   const hasAny = parts[kind].length > 0
+  const showRail = !lists.starting && lists.playlists.length > 0 && hasAny && base.length > 0
+  const rail = { categories, total: base.length, favoriteCount, selected, onSelect: setCategory, onManage: () => openManage(kind) }
 
   return (
-    <div className="space-y-8">
-      <section aria-labelledby={`${kind}-title`}>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 id={`${kind}-title`} className="display text-3xl font-semibold">
-              {KIND_LABEL[kind]}
-            </h1>
-            <p className="mt-1 text-sm tabular-nums text-[var(--subtle)]">{items.length.toLocaleString('tr-TR')} öğe</p>
-          </div>
-          {hasAny && (
-            <div className="flex w-full items-center gap-2 sm:w-auto">
-              <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
+    <div className="lg:-mx-8 lg:-mb-16 lg:-mt-8 lg:flex lg:min-h-dvh">
+      {showRail && <CategorySidebar {...rail} />}
+
+      <div className="min-w-0 flex-1">
+        <header className="sticky top-0 z-20 -mx-4 bg-[#0b0c10]/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:px-8 lg:py-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <Breadcrumb kind={kind} selected={selected} />
+              <p className="mt-0.5 text-sm tabular-nums text-[var(--subtle)]">{items.length.toLocaleString('tr-TR')} öğe</p>
+            </div>
+            {hasAny && (
+              <div className="relative w-full sm:w-72">
                 <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--subtle)]" aria-hidden="true" />
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`${KIND_LABEL[kind]} içinde ara`} aria-label="Ara" className="field !pl-9 !pr-9" />
                 {query && (
@@ -85,28 +112,26 @@ export function BrowsePage({ kind }: { kind: Kind }) {
                   </button>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setFavOnly((v) => !v)}
-                aria-pressed={favOnly}
-                aria-label="Yalnızca favoriler"
-                title="Yalnızca favoriler"
-                className={`btn-ghost shrink-0 !px-3 ${favOnly ? '!border-[var(--accent)] !text-[var(--accent)]' : ''}`}
-              >
-                <Heart size={16} fill={favOnly ? 'currentColor' : 'none'} />
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </header>
 
-        <div className="mt-5">
+        <div className="pt-2 lg:px-8 lg:pb-16">
+          {showRail && <CategoryChips {...rail} />}
+
           {kind === 'series' && catalog.error && xtream && (
             <p className="mb-4 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--ink-2)]">
               Dizi listesi portaldan alınamadı. {catalog.error} Listedeki bölümler tek tek gösteriliyor.
             </p>
           )}
-          {lists.starting ? null : kind === 'series' && catalog.loading && !hasAny ? (
-            <p className="py-16 text-center text-sm text-[var(--subtle)]">Diziler portaldan yükleniyor...</p>
+
+          {lists.starting ? (
+            <SkeletonGrid poster={poster} className={gridClass} />
+          ) : kind === 'series' && catalog.loading && !hasAny ? (
+            <div>
+              <p className="mb-4 text-sm text-[var(--subtle)]">Diziler portaldan yükleniyor...</p>
+              <SkeletonGrid poster className={POSTER_GRID[prefs.cardSize]} />
+            </div>
           ) : lists.playlists.length === 0 ? (
             <Empty icon="add">M3U adresi, portal girişi veya dosyayla ilk listeni ekle.</Empty>
           ) : !hasAny ? (
@@ -120,29 +145,24 @@ export function BrowsePage({ kind }: { kind: Kind }) {
                 </button>
               </div>
             </Empty>
+          ) : items.length === 0 ? (
+            <Empty icon="none">
+              {selected === FAVORITES && deferred.trim() === '' ? 'Bu bölümde henüz favorin yok. Kartlardaki kalbe dokunarak favori ekleyebilirsin.' : 'Eşleşen sonuç yok.'}
+            </Empty>
           ) : (
-            <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
-              <CategoryRail categories={categories} total={base.length} selected={activeCategory} onSelect={setCategory} onManage={() => openManage(kind)} />
-              <div className="min-w-0 flex-1">
-                {items.length === 0 ? (
-                  <Empty icon="none">Eşleşen sonuç yok.</Empty>
-                ) : (
-                  <ProgressiveGrid
-                    key={`${activeCategory}|${deferred}|${favOnly}|${prefs.cardSize}`}
-                    items={items}
-                    className={poster ? POSTER_GRID[prefs.cardSize] : LIVE_GRID[prefs.cardSize]}
-                    getKey={(c) => c.id}
-                    render={(c) => {
-                      const props = { channel: c, active: current?.id === c.id, favorite: isFavorite(c), showLogo: prefs.showLogos, onPlay: openItem, onFavorite: toggleFavorite }
-                      return poster ? <PosterCard {...props} /> : <ChannelCard {...props} />
-                    }}
-                  />
-                )}
-              </div>
-            </div>
+            <ProgressiveGrid
+              key={`${selected}|${deferred}|${prefs.cardSize}`}
+              items={items}
+              className={gridClass}
+              getKey={(c) => c.id}
+              render={(c) => {
+                const props = { channel: c, active: current?.id === c.id, favorite: isFavorite(c), showLogo: prefs.showLogos, onPlay: openItem, onFavorite: toggleFavorite }
+                return poster ? <PosterCard {...props} /> : <ChannelCard {...props} epg={epg.nowNext(c)} />
+              }}
+            />
           )}
         </div>
-      </section>
+      </div>
     </div>
   )
 }

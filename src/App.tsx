@@ -23,7 +23,7 @@ function Shell() {
           <Brand />
         </header>
 
-        <main className="mx-auto w-full max-w-[1920px] px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
+        <main className="mx-auto w-full px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
           {lists.error && !adding && (
             <p role="alert" className="mb-4 rounded-2xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--ink-2)]">
               {lists.error}

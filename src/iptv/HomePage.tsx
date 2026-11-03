@@ -1,13 +1,14 @@
 import { type ReactNode, useMemo } from 'react'
 import { ChevronRight, ListPlus, Play, Tv } from 'lucide-react'
 import { ChannelCard, PosterCard } from './Cards'
+import { SkeletonGrid } from './Skeletons'
 import { groupOf, kindOf } from './kinds'
 import { hrefFor, type Page } from './router'
 import type { Channel } from './types'
 import { useMedia } from './useMedia'
 
 function Row({ title, items, href }: { title: string; items: Channel[]; href?: Page }) {
-  const { current, openItem, isFavorite, toggleFavorite, prefs } = useMedia()
+  const { current, openItem, isFavorite, toggleFavorite, prefs, epg } = useMedia()
   if (items.length === 0) return null
   return (
     <section aria-label={title}>
@@ -25,7 +26,7 @@ function Row({ title, items, href }: { title: string; items: Channel[]; href?: P
           const props = { channel: c, active: current?.id === c.id, favorite: isFavorite(c), showLogo: prefs.showLogos, onPlay: openItem, onFavorite: toggleFavorite }
           return (
             <li key={c.id} className={`shrink-0 snap-start ${poster ? 'w-36 sm:w-40' : 'w-56 sm:w-64'}`}>
-              {poster ? <PosterCard {...props} /> : <ChannelCard {...props} />}
+              {poster ? <PosterCard {...props} /> : <ChannelCard {...props} epg={epg.nowNext(c)} />}
             </li>
           )
         })}
@@ -68,7 +69,7 @@ export function HomePage(): ReactNode {
   )
   const featured = favs[0] ?? visible.live[0] ?? visible.movie[0] ?? visible.series[0]
 
-  if (lists.starting) return null
+  if (lists.starting) return <SkeletonGrid poster={false} count={12} className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4" />
 
   if (lists.playlists.length === 0) {
     return (
