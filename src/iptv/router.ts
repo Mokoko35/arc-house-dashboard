@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 
 /** Hash routing, so it also works when the app is opened from a file (Windows desktop build). */
 export type Page = 'home' | 'live' | 'movies' | 'series' | 'settings'
-export type SettingsTab = 'general' | 'playback' | 'epg' | 'categories'
+export type SettingsTab = 'general' | 'playback' | 'epg' | 'categories' | 'themes'
 
 export const PAGES: Page[] = ['home', 'live', 'movies', 'series', 'settings']
-export const SETTINGS_TABS: SettingsTab[] = ['general', 'playback', 'epg', 'categories']
+export const SETTINGS_TABS: SettingsTab[] = ['general', 'playback', 'epg', 'categories', 'themes']
 
 export interface Route {
   page: Page

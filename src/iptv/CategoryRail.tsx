@@ -32,7 +32,7 @@ function entries({ categories, total, favoriteCount }: Props): Entry[] {
 export function CategorySidebar(props: Props) {
   const { selected, onSelect, onManage } = props
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col self-start border-r border-white/10 bg-[#0d0e13] lg:flex" aria-label="Kategoriler">
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col self-start border-r border-white/10 bg-rail lg:flex" aria-label="Kategoriler">
       <div className="flex items-center justify-between px-5 pb-2 pt-6">
         <h2 className="label">Kategoriler</h2>
         <button
@@ -40,7 +40,7 @@ export function CategorySidebar(props: Props) {
           onClick={onManage}
           aria-label="Kategorileri yönet"
           title="Kategorileri yönet"
-          className="grid h-9 w-9 place-items-center rounded-full text-[var(--subtle)] hover:bg-white/10 hover:text-[var(--accent)]"
+          className="grid h-9 w-9 place-items-center rounded-full text-[var(--subtle)] hover:bg-white/10 hover:text-accent"
         >
           <SlidersHorizontal size={16} />
         </button>
@@ -56,10 +56,10 @@ export function CategorySidebar(props: Props) {
                 aria-selected={on}
                 onClick={() => onSelect(e.key)}
                 className={`relative flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition ${
-                  on ? 'bg-[var(--accent)]/15 font-semibold text-[var(--accent)]' : 'text-[var(--subtle)] hover:bg-white/5 hover:text-[var(--ink)]'
+                  on ? 'bg-accent/15 font-semibold text-accent' : 'text-[var(--subtle)] hover:bg-white/5 hover:text-[var(--ink)]'
                 }`}
               >
-                {on && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-[var(--accent)]" />}
+                {on && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-accent" />}
                 {e.favorite && <Heart size={14} fill={on ? 'currentColor' : 'none'} aria-hidden="true" className="shrink-0" />}
                 <span className="min-w-0 flex-1 truncate">{e.label}</span>
                 <span className="shrink-0 text-xs tabular-nums opacity-60">{e.count.toLocaleString('tr-TR')}</span>
@@ -85,7 +85,7 @@ export function CategoryChips(props: Props) {
           aria-selected={selected === e.key}
           onClick={() => onSelect(e.key)}
           className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm transition ${
-            selected === e.key ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]' : 'border-white/10 text-[var(--subtle)] hover:text-[var(--ink)]'
+            selected === e.key ? 'border-accent bg-accent/15 text-accent' : 'border-white/10 text-[var(--subtle)] hover:text-[var(--ink)]'
           }`}
         >
           {e.favorite && <Heart size={13} fill={selected === e.key ? 'currentColor' : 'none'} aria-hidden="true" />}

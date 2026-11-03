@@ -2,22 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg: #0d1b2f;
-  --bg-gradient: linear-gradient(180deg, #0d1b2f 0%, #0d1b2f 58%, #122d45 100%);
-  --surface: rgba(255, 255, 255, 0.07);
-  --surface-strong: rgba(255, 255, 255, 0.11);
-  --surface-muted: #1f2f44;
-  --ink: #f9faf3;
-  --ink-2: #e3ecf9;
-  --muted: #cbd5e1;
-  --subtle: #94a3b8;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(203, 219, 242, 0.55);
-  --accent: #acc6e9;
-  --accent-hover: #cbdbf2;
+/*
+ * Themes. Each theme sets a handful of color channels ("r g b"); everything else is derived from them.
+ * `data-theme` is set on <html> (see src/iptv/themes.ts). The default theme is also the fallback.
+ */
+:root,
+html[data-theme='default'] {
+  --bg-rgb: 11 12 16;
+  --nav-rgb: 8 9 12;
+  --rail-rgb: 13 14 19;
+  --elev-rgb: 20 21 26;
+  --accent-rgb: 255 122 26;
+  --accent-hover: #ff9340;
+  --accent-ink: #1a0f05;
+  --scroll-thumb: rgba(255, 255, 255, 0.14);
+  --scroll-thumb-hover: rgba(255, 138, 51, 0.55);
+}
+
+html[data-theme='neon'] {
+  --bg-rgb: 9 5 22;
+  --nav-rgb: 6 3 15;
+  --rail-rgb: 13 8 31;
+  --elev-rgb: 22 14 48;
+  --accent-rgb: 255 43 214;
+  --accent-hover: #ff6ee6;
+  --accent-ink: #1c0018;
+  --scroll-thumb: rgba(255, 43, 214, 0.28);
+  --scroll-thumb-hover: rgba(0, 240, 255, 0.7);
+}
+
+html[data-theme='navy'] {
+  --bg-rgb: 10 18 38;
+  --nav-rgb: 7 13 28;
+  --rail-rgb: 12 22 46;
+  --elev-rgb: 19 31 62;
+  --accent-rgb: 77 163 255;
+  --accent-hover: #7dbbff;
+  --accent-ink: #04122a;
+  --scroll-thumb: rgba(125, 187, 255, 0.22);
+  --scroll-thumb-hover: rgba(77, 163, 255, 0.7);
+}
+
+html[data-theme='forest'] {
+  --bg-rgb: 9 16 13;
+  --nav-rgb: 6 12 10;
+  --rail-rgb: 12 21 17;
+  --elev-rgb: 18 30 24;
+  --accent-rgb: 52 211 153;
+  --accent-hover: #6ee7b7;
+  --accent-ink: #03150e;
+  --scroll-thumb: rgba(110, 231, 183, 0.2);
+  --scroll-thumb-hover: rgba(52, 211, 153, 0.65);
+}
+
+html {
+  color-scheme: dark;
+  --bg: rgb(var(--bg-rgb));
+  --accent: rgb(var(--accent-rgb));
+  --danger-rgb: 232 109 122;
+  --danger: rgb(var(--danger-rgb));
   --success: #8dd89f;
-  --danger: #e86d7a;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-strong: rgba(255, 255, 255, 0.1);
+  --ink: #f5f5f4;
+  --ink-2: #e7e5e4;
+  --muted: #d6d3d1;
+  --subtle: #a8a29e;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgb(var(--accent-rgb) / 0.6);
 }
 
 * {
@@ -28,9 +80,22 @@ body {
   margin: 0;
   min-height: 100dvh;
   font-family: 'DM Sans', sans-serif;
-  background: var(--bg) var(--bg-gradient) fixed;
+  background: var(--bg);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Windows has no flag emoji. This font (bundled, Twemoji flags only) draws them; other glyphs fall through. */
+@font-face {
+  font-family: 'Twemoji Country Flags';
+  unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E007F;
+  src: url('./assets/fonts/TwemojiCountryFlags.woff2') format('woff2');
+  font-display: swap;
+}
+
+.flag {
+  font-family: 'Twemoji Country Flags', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  line-height: 1;
 }
 
 .display {
@@ -69,7 +134,7 @@ body {
   min-height: 44px;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(13, 27, 47, 0.6);
+  background: rgb(var(--bg-rgb) / 0.6);
   border: 1px solid var(--border);
   color: var(--ink);
   font-size: 14px;
@@ -83,7 +148,7 @@ body {
 
 .field:focus {
   border-color: var(--border-strong);
-  box-shadow: 0 0 0 3px rgba(172, 198, 233, 0.18);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.25);
 }
 
 .btn-primary {
@@ -95,7 +160,7 @@ body {
   padding: 0 20px;
   border-radius: 14px;
   background: var(--accent);
-  color: #0d1b2f;
+  color: var(--accent-ink);
   font-weight: 600;
   font-size: 14px;
   transition: background 0.15s, transform 0.1s, opacity 0.15s;
@@ -153,31 +218,11 @@ a:focus-visible {
   }
 }
 
-/* Media-center theme (IPTV page): near-black canvas with an orange accent. */
+/* The app canvas. */
 .theme-media {
-  --bg: #0b0c10;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-strong: rgba(255, 255, 255, 0.1);
-  --ink: #f5f5f4;
-  --ink-2: #e7e5e4;
-  --muted: #d6d3d1;
-  --subtle: #a8a29e;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 138, 51, 0.6);
-  --accent: #ff7a1a;
-  --accent-hover: #ff9340;
-  --accent-ink: #1a0f05;
-  background: #0b0c10;
+  background: var(--bg);
   color: var(--ink);
   min-height: 100dvh;
-}
-
-.theme-media .btn-primary {
-  color: var(--accent-ink);
-}
-
-.theme-media .field:focus {
-  box-shadow: 0 0 0 3px rgba(255, 122, 26, 0.25);
 }
 
 .theme-media button:focus-visible,
@@ -194,11 +239,7 @@ a:focus-visible {
   display: none;
 }
 
-/* Scrollbars: thin, dark and rounded, everywhere. */
-html {
-  color-scheme: dark;
-}
-
+/* Scrollbars: thin, rounded, and tinted by the theme. */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -207,13 +248,13 @@ html {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--scroll-thumb);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 138, 51, 0.55);
+  background: var(--scroll-thumb-hover);
   background-clip: padding-box;
   border: 2px solid transparent;
 }
@@ -225,7 +266,7 @@ html {
 @supports not selector(::-webkit-scrollbar) {
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    scrollbar-color: var(--scroll-thumb) transparent;
   }
 }
 
@@ -233,11 +274,11 @@ html {
 @keyframes splash-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 122, 26, 0.45), 0 0 40px rgba(255, 122, 26, 0.25);
+    box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0.45), 0 0 40px rgb(var(--accent-rgb) / 0.25);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 18px rgba(255, 122, 26, 0), 0 0 70px rgba(255, 122, 26, 0.45);
+    box-shadow: 0 0 0 18px rgb(var(--accent-rgb) / 0), 0 0 70px rgb(var(--accent-rgb) / 0.45);
     transform: scale(1.06);
   }
 }

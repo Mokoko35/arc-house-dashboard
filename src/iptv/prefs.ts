@@ -1,9 +1,15 @@
 import type { Kind } from './kinds'
+import { DEFAULT_THEME, THEMES, type ThemeId } from './themes'
 
 export type CardSize = 'sm' | 'md' | 'lg'
 export type EpgRefresh = 'off' | '6' | '12' | '24'
 
 export interface Prefs {
+  theme: ThemeId
+  /** Hide adult categories and channels. On by default; changing it needs the PIN. */
+  adultFilter: boolean
+  /** Country codes ticked in the Live TV country filter. "--" means channels without a country. */
+  countries: string[]
   /** Left menu shows only icons. */
   sidebarCollapsed: boolean
   showLogos: boolean
@@ -16,6 +22,9 @@ export interface Prefs {
 }
 
 export const DEFAULT_PREFS: Prefs = {
+  theme: DEFAULT_THEME,
+  adultFilter: true,
+  countries: [],
   sidebarCollapsed: false,
   showLogos: true,
   cardSize: 'md',
@@ -37,6 +46,9 @@ export function loadPrefs(): Prefs {
     if (!isRecord(raw)) return DEFAULT_PREFS
     const d = DEFAULT_PREFS
     return {
+      theme: THEMES.find((t) => t.id === raw.theme)?.id ?? d.theme,
+      adultFilter: typeof raw.adultFilter === 'boolean' ? raw.adultFilter : d.adultFilter,
+      countries: Array.isArray(raw.countries) ? (raw.countries as unknown[]).filter((c): c is string => typeof c === 'string' && c.length <= 3).slice(0, 80) : d.countries,
       sidebarCollapsed: typeof raw.sidebarCollapsed === 'boolean' ? raw.sidebarCollapsed : d.sidebarCollapsed,
       showLogos: typeof raw.showLogos === 'boolean' ? raw.showLogos : d.showLogos,
       cardSize: raw.cardSize === 'sm' || raw.cardSize === 'md' || raw.cardSize === 'lg' ? raw.cardSize : d.cardSize,

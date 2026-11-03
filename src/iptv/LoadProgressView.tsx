@@ -36,7 +36,7 @@ export function LoadProgressView({ progress, onBackground }: { progress: LoadPro
   return (
     <div className="py-4" role="status" aria-live="polite">
       <div className="flex flex-col items-center text-center">
-        <div className={`grid h-14 w-14 place-items-center rounded-2xl ${done ? 'bg-emerald-500/20 text-emerald-300' : 'bg-[var(--accent)]/15 text-[var(--accent)]'}`}>
+        <div className={`grid h-14 w-14 place-items-center rounded-2xl ${done ? 'bg-emerald-500/20 text-emerald-300' : 'bg-accent/15 text-accent'}`}>
           {done ? <Check size={28} aria-hidden="true" /> : <Loader2 size={28} className="animate-spin" aria-hidden="true" />}
         </div>
         <p className="display mt-4 text-xl font-semibold">{STAGE_TEXT[progress.stage]}</p>
@@ -49,9 +49,9 @@ export function LoadProgressView({ progress, onBackground }: { progress: LoadPro
         {done ? (
           <div className="h-full w-full rounded-full bg-emerald-400" />
         ) : pct !== null ? (
-          <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
         ) : (
-          <div className="splash-bar h-full w-2/5 rounded-full bg-[var(--accent)]" />
+          <div className="splash-bar h-full w-2/5 rounded-full bg-accent" />
         )}
       </div>
 

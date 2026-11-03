@@ -27,7 +27,7 @@ export function PlaylistManager() {
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-sm font-medium text-[var(--ink-2)]">
                       <span className="truncate">{p.name}</span>
-                      {isActive && <span className="rounded-md bg-[var(--accent)]/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--accent)]">Aktif</span>}
+                      {isActive && <span className="rounded-md bg-accent/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">Aktif</span>}
                     </p>
                     <p className="text-xs tabular-nums text-[var(--subtle)]">
                       {KIND_TEXT[p.kind]} · {p.channelCount.toLocaleString('tr-TR')} öğe · {new Date(p.updatedAt).toLocaleDateString('tr-TR')}
@@ -53,7 +53,7 @@ export function PlaylistManager() {
                       type="button"
                       onClick={() => window.confirm(`"${p.name}" listesi silinsin mi?`) && void lists.remove(p.id)}
                       aria-label={`${p.name} listesini sil`}
-                      className="btn-ghost !min-h-10 !px-3 hover:!text-[var(--danger)]"
+                      className="btn-ghost !min-h-10 !px-3 hover:!text-danger"
                     >
                       <Trash2 size={15} />
                     </button>
@@ -62,7 +62,7 @@ export function PlaylistManager() {
               </div>
             )
           })}
-          {lists.error && <p role="alert" className="px-5 py-3 text-sm text-[var(--danger)]">{lists.error}</p>}
+          {lists.error && <p role="alert" className="px-5 py-3 text-sm text-danger">{lists.error}</p>}
           <div className="px-5 py-4">
             <button type="button" onClick={openAdd} className="btn-ghost">
               <ListPlus size={16} aria-hidden="true" /> Liste ekle

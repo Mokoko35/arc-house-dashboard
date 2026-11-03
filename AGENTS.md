@@ -24,6 +24,9 @@ An IPTV player (browser and Windows desktop app). Users add M3U / Xtream lists a
 - `src/iptv/PlayerOverlay.tsx` - the one player element; it is a large modal or a docked mini player (`playerMode`), so minimizing never restarts the stream. Pages must not render their own player.
 - `src/iptv/m3u.ts`, `xtream.ts`, `xtreamApi.ts` - playlist parsing and Xtream `player_api.php` calls (cached)
 - `src/iptv/CategoryRail.tsx` - category panel (`CategorySidebar`, full height, independent of the main menu) and `CategoryChips` for small screens; `BrowsePage.tsx` shows the sticky breadcrumb title
+- `src/iptv/themes.ts` + `html[data-theme]` blocks in `src/index.css` - themes are sets of color channels (`--bg-rgb`, `--accent-rgb` ...); Tailwind colors `accent`, `danger`, `canvas`, `nav`, `rail`, `elev` read them. Use these, never hard-coded hex colors, and never `bg-[var(--x)]/NN` (Tailwind drops the opacity)
+- `src/iptv/adult.ts`, `pin.ts`, `PinDialog.tsx` - adult filter (applied in `MediaProvider` so every view agrees) and the hashed 4-digit PIN
+- `src/iptv/countries.ts`, `CountryFilter.tsx` - country detection from channel names and the flag filter
 - `src/iptv/xmltv.ts`, `useEpg.ts`, `EpgPanel.tsx` - program guide: streaming XMLTV reader (keeps only programmes around now), cached per list in IndexedDB, Now/Next lookup
 - `src/iptv/load.ts`, `LoadProgressView.tsx`, `ActivityPill.tsx`, `Skeletons.tsx` - streamed list download with live counts, and loading UI
 - `src/iptv/Splash.tsx` - launch splash

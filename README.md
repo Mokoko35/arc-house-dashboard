@@ -11,6 +11,9 @@ Built with [Arc Studio](https://studio.arc.io)
 - **Player window and mini player:** clicking a channel, movie or episode opens a large player window. Close it and the stream keeps playing in a small floating player in the corner while you keep browsing.
 - **Real movie and series details** from Xtream portals: poster, synopsis, cast, director, rating, trailer link, and seasons with episodes.
 - **Category manager:** show or hide categories per section.
+- **Adult content filter:** categories and channels tagged XXX, Adult, +18 and similar are hidden by default. Turning the filter off or on, and changing the PIN, asks for a 4-digit PIN that you set (stored on the device as a salted hash).
+- **Country filter:** on Live TV, tick one or more countries (with flags) to show only their channels. The country is read from names such as `TR: TRT 1`, `[DE] ZDF` or `US | CNN`.
+- **Themes:** four color presets (Default Dark, Neon, Navy, Forest) that change the accent color, background shades and scrollbar color. Your choice is saved.
 - **Program guide (EPG):** the Live TV cards and the player window show what is on now and next, with a progress bar. It reads the portal's `xmltv.php` guide, or any XMLTV address you set in Settings (`.xml` and `.xml.gz`).
 - **Clear loading feedback:** adding a list shows a live progress screen with the number of channels, movies and series found as it downloads; background loading shows a status pill, and grids show placeholders while they fill.
 - **Collapsible menu:** a hamburger button shrinks the left menu to icons so the grids get more room.
@@ -58,6 +61,8 @@ With Bun, use `bun install` and `bun run ...` instead.
 None.
 
 ## Notes
+
+- Flag emoji do not draw on Windows by themselves, so the app bundles a small flags-only font (Twemoji Country Flags, a subset of Twemoji by Twitter, CC-BY 4.0, packaged by country-flag-emoji-polyfill, MIT).
 
 - The program guide is matched to channels by the list's `tvg-id`, or by channel name when there is none. Lists added before this feature have no `tvg-id` saved, so update them once. Large guides can take a few minutes to download; only the programmes around the current time are kept on the device.
 - Movie and series details need a list added as a portal login or as a `get.php` address. Plain M3U lists play straight from the grid.

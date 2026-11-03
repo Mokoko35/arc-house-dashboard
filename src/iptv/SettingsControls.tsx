@@ -40,7 +40,7 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:cursor-not-allowed disabled:opacity-40 ${checked ? 'bg-[var(--accent)]' : 'bg-white/15'}`}
+      className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:cursor-not-allowed disabled:opacity-40 ${checked ? 'bg-accent' : 'bg-white/15'}`}
     >
       <span className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : ''}`} />
     </button>
@@ -71,7 +71,7 @@ export function Segmented<T extends string | number>({
           disabled={disabled}
           onClick={() => onChange(o.value)}
           className={`min-h-9 rounded-lg px-3 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
-            value === o.value ? 'bg-[var(--accent)] font-semibold text-[var(--accent-ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'
+            value === o.value ? 'bg-accent font-semibold text-[var(--accent-ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'
           }`}
         >
           {o.label}

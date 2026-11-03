@@ -13,7 +13,7 @@ const ITEMS: { page: Page; label: string; icon: typeof Home }[] = [
 export function Brand() {
   return (
     <div className="flex items-center gap-3">
-      <div className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--accent)] text-[var(--accent-ink)]">
+      <div className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-[var(--accent-ink)]">
         <Tv size={19} aria-hidden="true" />
       </div>
       <span className="display text-xl font-semibold tracking-tight">IPTV</span>
@@ -30,7 +30,7 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-white/10 bg-[#08090c] py-5 lg:flex ${collapsed ? 'w-[72px] px-2' : 'w-60 px-3'}`}
+        className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-white/10 bg-nav py-5 lg:flex ${collapsed ? 'w-[72px] px-2' : 'w-60 px-3'}`}
         aria-label="Ana menü"
       >
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2 px-1'}`}>
@@ -59,10 +59,10 @@ export function Sidebar() {
                 aria-label={collapsed ? label : undefined}
                 title={collapsed ? label : undefined}
                 className={`relative flex min-h-11 items-center rounded-xl text-sm font-medium transition ${collapsed ? 'justify-center' : 'gap-3 px-3'} ${
-                  on ? 'bg-[var(--accent)]/15 text-[var(--accent)]' : 'text-[var(--subtle)] hover:bg-white/5 hover:text-[var(--ink)]'
+                  on ? 'bg-accent/15 text-accent' : 'text-[var(--subtle)] hover:bg-white/5 hover:text-[var(--ink)]'
                 }`}
               >
-                {on && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-[var(--accent)]" />}
+                {on && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-accent" />}
                 <Icon size={20} aria-hidden="true" />
                 {!collapsed && <span className="flex-1">{label}</span>}
                 {!collapsed && count !== undefined && count > 0 && <span className="text-xs tabular-nums opacity-60">{count.toLocaleString('tr-TR')}</span>}
@@ -91,7 +91,7 @@ export function Sidebar() {
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/10 bg-[#08090c]/95 backdrop-blur lg:hidden" aria-label="Ana menü">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/10 bg-nav/95 backdrop-blur lg:hidden" aria-label="Ana menü">
         {ITEMS.map(({ page, label, icon: Icon }) => {
           const on = route.page === page
           return (
@@ -99,7 +99,7 @@ export function Sidebar() {
               key={page}
               href={hrefFor(page)}
               aria-current={on ? 'page' : undefined}
-              className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${on ? 'text-[var(--accent)]' : 'text-[var(--subtle)]'}`}
+              className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${on ? 'text-accent' : 'text-[var(--subtle)]'}`}
             >
               <Icon size={20} aria-hidden="true" />
               {label}

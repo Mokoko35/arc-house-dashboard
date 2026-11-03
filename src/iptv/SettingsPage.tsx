@@ -1,10 +1,14 @@
-import { RefreshCw, SlidersHorizontal } from 'lucide-react'
+import { RefreshCw, ShieldCheck, SlidersHorizontal } from 'lucide-react'
+import { useState } from 'react'
 import { dateTime, megabytes } from './epgFormat'
 import { PlaylistManager } from './PlaylistManager'
 import { KIND_LABEL, KINDS, categoriesOf } from './kinds'
 import type { CardSize, EpgRefresh } from './prefs'
 import { hrefFor, type SettingsTab } from './router'
+import { PinDialog } from './PinDialog'
+import { hasPin } from './pin'
 import { Row, Section, Segmented, Toggle } from './SettingsControls'
+import { ThemePicker } from './ThemePicker'
 import { useMedia } from './useMedia'
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -12,13 +16,76 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'playback', label: 'Oynatma' },
   { id: 'epg', label: 'EPG' },
   { id: 'categories', label: 'Kategori Yönetimi' },
+  { id: 'themes', label: 'Temalar' },
 ]
+
+/** Hide adult content. Switching it either way, and changing the PIN, asks for the 4-digit PIN. */
+function AdultFilter() {
+  const { prefs, updatePrefs } = useMedia()
+  const [pinSet, setPinSet] = useState(hasPin)
+  const [notice, setNotice] = useState<string | null>(null)
+  // What the PIN dialog is for, and what happens once it succeeds.
+  const [flow, setFlow] = useState<{ step: 'verify' | 'create'; after: 'toggle' | 'change'; next?: boolean } | null>(null)
+
+  const start = (after: 'toggle' | 'change', next?: boolean) => {
+    setNotice(null)
+    setFlow({ step: pinSet ? 'verify' : 'create', after, next })
+  }
+
+  const done = () => {
+    if (!flow) return
+    if (flow.step === 'verify' && flow.after === 'change') {
+      setFlow({ step: 'create', after: 'change' })
+      return
+    }
+    if (flow.step === 'create') setPinSet(true)
+    if (flow.after === 'toggle' && flow.next !== undefined) {
+      updatePrefs({ adultFilter: flow.next })
+      setNotice(flow.next ? 'Yetişkin içerik gizlendi.' : 'Yetişkin içerik gösteriliyor.')
+    } else if (flow.after === 'change') {
+      setNotice('PIN değiştirildi.')
+    }
+    setFlow(null)
+  }
+
+  const dialog = (() => {
+    if (!flow) return null
+    if (flow.step === 'create') {
+      return flow.after === 'change'
+        ? { title: 'Yeni PIN', description: 'Yeni 4 haneli PIN\'ini gir.' }
+        : { title: 'PIN belirle', description: 'Yetişkin içerik ayarını değiştirmek için 4 haneli bir PIN belirle. Unutma: PIN bu cihazda saklanır.' }
+    }
+    return flow.after === 'change'
+      ? { title: 'Mevcut PIN', description: 'PIN\'ini değiştirmek için önce mevcut PIN\'ini gir.' }
+      : { title: flow.next ? 'Yetişkin içeriği gizle' : 'Yetişkin içeriği göster', description: 'Devam etmek için 4 haneli PIN\'ini gir.' }
+  })()
+
+  return (
+    <Section title="Yetişkin içeriği" description="XXX, Adult, +18 gibi etiketler taşıyan kategoriler ve kanallar listelerden çıkarılır.">
+      <Row label="Yetişkin içeriğini gizle" hint="Açıkken bu içerik her yerde gizlenir. Ayarı değiştirmek için PIN gerekir.">
+        <Toggle label="Yetişkin içeriğini gizle" checked={prefs.adultFilter} onChange={(next) => start('toggle', next)} />
+      </Row>
+      <Row label="PIN" hint="4 haneli PIN bu cihazın yerel depolamasında, karıştırılmış (hash) olarak saklanır. Unutursan tarayıcı verilerini temizleyerek sıfırlayabilirsin.">
+        <button type="button" onClick={() => start('change')} className="btn-ghost">
+          <ShieldCheck size={16} aria-hidden="true" /> {pinSet ? 'PIN\'i değiştir' : 'PIN belirle'}
+        </button>
+      </Row>
+      {notice && (
+        <p role="status" className="px-5 py-3 text-sm text-[var(--success)]">
+          {notice}
+        </p>
+      )}
+      {flow && dialog && <PinDialog key={`${flow.step}-${flow.after}`} mode={flow.step} title={dialog.title} description={dialog.description} onSuccess={done} onCancel={() => setFlow(null)} />}
+    </Section>
+  )
+}
 
 function General() {
   const { prefs, updatePrefs } = useMedia()
   return (
     <div className="space-y-5">
       <PlaylistManager />
+      <AdultFilter />
       <Section title="Görünüm">
         <Row label="Kart boyutu" hint="Kanal ve poster ızgaralarının yoğunluğu.">
           <Segmented<CardSize>
@@ -85,7 +152,7 @@ function Epg() {
     <div className="space-y-5">
       <Section title="Program rehberi (EPG)" description="Canlı TV kartlarında ve oynatıcı penceresinde Şimdi ve Sonra programlarını gösterir.">
         <Row label="Durum" hint={epg.status === 'ready' && epg.error ? epg.error : undefined}>
-          <p aria-live="polite" className={`max-w-xs text-right text-sm tabular-nums ${epg.status === 'error' ? 'text-[var(--danger)]' : 'text-[var(--ink-2)]'}`}>
+          <p aria-live="polite" className={`max-w-xs text-right text-sm tabular-nums ${epg.status === 'error' ? 'text-danger' : 'text-[var(--ink-2)]'}`}>
             {status}
           </p>
         </Row>
@@ -173,7 +240,7 @@ export function SettingsPage() {
               role="tab"
               aria-selected={on}
               className={`-mb-px flex min-h-11 shrink-0 items-center border-b-2 px-4 text-sm font-medium transition ${
-                on ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--subtle)] hover:text-[var(--ink)]'
+                on ? 'border-accent text-accent' : 'border-transparent text-[var(--subtle)] hover:text-[var(--ink)]'
               }`}
             >
               {t.label}
@@ -186,6 +253,7 @@ export function SettingsPage() {
         {route.tab === 'playback' && <Playback />}
         {route.tab === 'epg' && <Epg />}
         {route.tab === 'categories' && <Categories />}
+        {route.tab === 'themes' && <ThemePicker />}
       </div>
     </div>
   )

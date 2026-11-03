@@ -44,7 +44,7 @@ function Header({ channel, details, status, fallbackText, actions, extraChips = 
       {details?.backdrop && (
         <>
           <img src={details.backdrop} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-30" />
-          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#14151a] via-[#14151a]/80 to-[#14151a]/30" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-elev via-elev/80 to-elev/30" />
         </>
       )}
       <div className="relative flex flex-col gap-5 p-5 pt-14 sm:flex-row sm:gap-7 sm:p-8 sm:pt-10">
@@ -95,7 +95,7 @@ function FavoriteAction({ channel }: { channel: Channel }) {
   const { isFavorite, toggleFavorite } = useMedia()
   const fav = isFavorite(channel)
   return (
-    <button type="button" onClick={() => toggleFavorite(channel)} aria-pressed={fav} className={`btn-ghost ${fav ? '!border-[var(--accent)] !text-[var(--accent)]' : ''}`}>
+    <button type="button" onClick={() => toggleFavorite(channel)} aria-pressed={fav} className={`btn-ghost ${fav ? '!border-accent !text-accent' : ''}`}>
       <Heart size={16} fill={fav ? 'currentColor' : 'none'} aria-hidden="true" />
       {fav ? 'Favorilerde' : 'Favorilere ekle'}
     </button>
@@ -180,7 +180,7 @@ function EpisodeRow({ ep, poster, playing, onPlay }: { ep: Episode; poster?: str
         type="button"
         onClick={onPlay}
         aria-label={`Sezon ${ep.season} bölüm ${ep.number}: ${ep.title} oynat`}
-        className={`group flex w-full items-center gap-4 rounded-2xl border p-3 text-left transition hover:bg-white/5 ${playing ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-white/10'}`}
+        className={`group flex w-full items-center gap-4 rounded-2xl border p-3 text-left transition hover:bg-white/5 ${playing ? 'border-accent bg-accent/10' : 'border-white/10'}`}
       >
         <span className="relative hidden h-16 w-28 shrink-0 sm:block">
           <PosterArt key={ep.image ?? poster ?? ep.id} name={`${ep.number}`} src={ep.image ?? poster} className="h-full w-full rounded-xl" />
@@ -190,9 +190,9 @@ function EpisodeRow({ ep, poster, playing, onPlay }: { ep: Episode; poster?: str
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
-            <span className="display text-lg font-semibold tabular-nums text-[var(--accent)]">{ep.number}</span>
+            <span className="display text-lg font-semibold tabular-nums text-accent">{ep.number}</span>
             <span className="truncate text-sm font-medium text-[var(--ink-2)]">{ep.title}</span>
-            {playing && <span className="rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
+            {playing && <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
           </span>
           {ep.plot && <span className="mt-1 line-clamp-2 block text-pretty text-xs text-[var(--subtle)]">{ep.plot}</span>}
         </span>
@@ -261,7 +261,7 @@ function SeriesDetailView({ channel, login, playlistId, seriesId }: { channel: C
                   aria-selected={season === s.number}
                   onClick={() => setPicked(s.number)}
                   className={`min-h-10 shrink-0 rounded-full border px-4 text-sm transition ${
-                    season === s.number ? 'border-[var(--accent)] bg-[var(--accent)]/15 font-semibold text-[var(--accent)]' : 'border-white/10 text-[var(--subtle)] hover:text-[var(--ink)]'
+                    season === s.number ? 'border-accent bg-accent/15 font-semibold text-accent' : 'border-white/10 text-[var(--subtle)] hover:text-[var(--ink)]'
                   }`}
                 >
                   {s.name}
@@ -303,7 +303,7 @@ function Sheet({ channel }: { channel: Channel }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="detail-title"
-        className="relative max-h-[94dvh] w-full max-w-4xl overflow-y-auto rounded-t-3xl border border-white/15 bg-[#14151a] shadow-2xl sm:rounded-3xl"
+        className="relative max-h-[94dvh] w-full max-w-4xl overflow-y-auto rounded-t-3xl border border-white/15 bg-elev shadow-2xl sm:rounded-3xl"
       >
         <button type="button" onClick={closeDetail} aria-label="Kapat" className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-white/80 hover:text-white">
           <X size={18} />

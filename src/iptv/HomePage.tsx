@@ -15,7 +15,7 @@ function Row({ title, items, href }: { title: string; items: Channel[]; href?: P
       <div className="flex items-center justify-between">
         <h2 className="display text-xl font-semibold">{title}</h2>
         {href && (
-          <a href={hrefFor(href)} className="inline-flex min-h-10 items-center gap-1 text-sm text-[var(--subtle)] hover:text-[var(--accent)]">
+          <a href={hrefFor(href)} className="inline-flex min-h-10 items-center gap-1 text-sm text-[var(--subtle)] hover:text-accent">
             Tümünü gör <ChevronRight size={15} aria-hidden="true" />
           </a>
         )}
@@ -39,11 +39,11 @@ function Hero({ channel }: { channel: Channel }) {
   const { openItem, route } = useMedia()
   const live = kindOf(channel) === 'live'
   return (
-    <section aria-label="Öne çıkan" className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#2a1608] via-[#14100c] to-[#0b0c10] p-6 sm:p-10">
+    <section aria-label="Öne çıkan" className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-accent/25 via-elev to-canvas p-6 sm:p-10">
       {channel.logo && <img src={channel.logo} alt="" aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-80 w-80 object-contain opacity-15 blur-sm" />}
-      <div aria-hidden="true" className="pointer-events-none absolute -left-20 bottom-[-120px] h-64 w-96 rounded-full bg-[var(--accent)]/20 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-20 bottom-[-120px] h-64 w-96 rounded-full bg-accent/20 blur-3xl" />
       <div className="relative max-w-xl">
-        <span className="rounded-md bg-[var(--accent)] px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">ÖNE ÇIKAN</span>
+        <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">ÖNE ÇIKAN</span>
         <h1 className="display mt-4 text-balance text-3xl font-semibold sm:text-5xl">{channel.name}</h1>
         <p className="mt-2 text-sm text-[var(--subtle)]">{groupOf(channel)}</p>
         <div className="mt-6 flex flex-wrap gap-3">
@@ -74,8 +74,8 @@ export function HomePage(): ReactNode {
   if (lists.playlists.length === 0) {
     return (
       <section className="card mx-auto mt-10 max-w-xl p-6 text-center sm:p-10">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--accent)]/15">
-          <Tv size={26} className="text-[var(--accent)]" aria-hidden="true" />
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-accent/15">
+          <Tv size={26} className="text-accent" aria-hidden="true" />
         </div>
         <h1 className="display mt-4 text-3xl font-semibold">İlk listeni ekle</h1>
         <p className="mx-auto mt-2 max-w-sm text-pretty text-sm text-[var(--subtle)]">

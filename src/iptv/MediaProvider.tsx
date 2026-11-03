@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { MediaContext, type Media, type PlayerMode } from './context'
 import { type Kind, type Partition, categoriesOf, groupOf, kindOf, partition } from './kinds'
 import { DEFAULT_PREFS, type HiddenMap, type Prefs, hiddenKey, loadHidden, loadPrefs, saveHidden, savePrefs } from './prefs'
@@ -8,6 +8,8 @@ import type { Channel } from './types'
 import { usePlaylists } from './usePlaylists'
 import { useCatalog } from './useCatalog'
 import { useEpg } from './useEpg'
+import { isAdult } from './adult'
+import { applyTheme } from './themes'
 import { loginFromPlaylistUrl, loginFromStreamUrl, vodIdOf } from './xtreamApi'
 import type { XtreamLogin } from './types'
 
@@ -51,8 +53,16 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       return extra && (!c.logo || c.rating === undefined) ? { ...c, logo: c.logo ?? extra.icon, rating: c.rating ?? extra.rating } : c
     })
     // The portal's own series list replaces the flat list of episodes from the M3U file.
-    return { live: base.live, movie, series: catalog.series ?? base.series }
-  }, [base, catalog])
+    const all: Partition = { live: base.live, movie, series: catalog.series ?? base.series }
+    if (!prefs.adultFilter) return all
+    // Filtered here, at the source, so counts, categories, search and favorites all agree.
+    const clean = (list: Channel[]) => list.filter((c) => !isAdult(c))
+    return { live: clean(all.live), movie: clean(all.movie), series: clean(all.series) }
+  }, [base, catalog, prefs.adultFilter])
+
+  useEffect(() => {
+    applyTheme(prefs.theme)
+  }, [prefs.theme])
 
   const hiddenFor = useCallback(
     (kind: Kind): Set<string> => {
@@ -138,7 +148,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     detail,
     openItem,
     closeDetail: () => setDetail(null),
-    current: playing && playing.playlistId === (active?.id ?? null) ? playing.channel : null,
+    current: playing && playing.playlistId === (active?.id ?? null) && !(prefs.adultFilter && isAdult(playing.channel)) ? playing.channel : null,
     playerMode,
     minimizePlayer: () => setPlayerMode((m) => (m === 'modal' ? 'mini' : m)),
     expandPlayer: () => setPlayerMode((m) => (m === 'mini' ? 'modal' : m)),

@@ -23,12 +23,12 @@ export function Splash() {
     <div
       role="status"
       aria-label="IPTV Oynatıcı yükleniyor"
-      className="fixed inset-0 z-[100] grid place-items-center bg-[#0b0c10] transition-opacity"
+      className="fixed inset-0 z-[100] grid place-items-center bg-canvas transition-opacity"
       style={{ opacity: phase === 'fade' ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
     >
-      <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)]/10 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-3xl" />
       <div className="relative flex flex-col items-center">
-        <div className="splash-logo grid h-24 w-24 place-items-center rounded-3xl bg-gradient-to-br from-[#ff9340] to-[#ff6a00] text-[#1a0f05]">
+        <div className="splash-logo grid h-24 w-24 place-items-center rounded-3xl bg-gradient-to-br from-[var(--accent-hover)] to-accent text-[var(--accent-ink)]">
           <Tv size={46} strokeWidth={2.2} aria-hidden="true" />
         </div>
         <h1 className="display splash-rise mt-6 text-4xl font-semibold tracking-tight" style={{ animationDelay: '0.15s' }}>
@@ -38,7 +38,7 @@ export function Splash() {
           Canlı TV · Filmler · Diziler
         </p>
         <div className="mt-8 h-1 w-44 overflow-hidden rounded-full bg-white/10">
-          <div className="splash-bar h-full w-2/5 rounded-full bg-[var(--accent)]" />
+          <div className="splash-bar h-full w-2/5 rounded-full bg-accent" />
         </div>
       </div>
     </div>

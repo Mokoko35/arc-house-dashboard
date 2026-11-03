@@ -116,7 +116,7 @@ function PlayerCore({ channel, autoplay, className }: { channel: Channel; autopl
       {message && (
         <div role="alert" className="absolute inset-0 grid place-items-center bg-black/80 p-6 text-center">
           <div className="max-w-md">
-            <AlertTriangle className="mx-auto text-[var(--danger)]" size={28} aria-hidden="true" />
+            <AlertTriangle className="mx-auto text-danger" size={28} aria-hidden="true" />
             <p className="mt-3 text-pretty text-sm text-[var(--ink-2)]">{message}</p>
           </div>
         </div>

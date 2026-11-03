@@ -55,7 +55,7 @@ function ModalBody({ kind }: { kind: Kind }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="manage-title"
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-3xl border border-white/15 bg-[#14151a] shadow-2xl sm:rounded-3xl"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-3xl border border-white/15 bg-elev shadow-2xl sm:rounded-3xl"
       >
         <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
           <div>
@@ -98,8 +98,8 @@ function ModalBody({ kind }: { kind: Kind }) {
                     <input type="checkbox" checked={on} onChange={() => toggle(c.name)} className="peer sr-only" />
                     <span
                       aria-hidden="true"
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent)] ${
-                        on ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]' : 'border-white/30'
+                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent ${
+                        on ? 'border-accent bg-accent text-[var(--accent-ink)]' : 'border-white/30'
                       }`}
                     >
                       {on && <Check size={14} strokeWidth={3} />}

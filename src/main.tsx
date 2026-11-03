@@ -6,7 +6,10 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { installShareSync } from './lib/share'
 import './index.css'
+import { applyTheme } from './iptv/themes'
+import { loadPrefs } from './iptv/prefs'
 
+applyTheme(loadPrefs().theme) // before the first paint, so there is no flash of the wrong colors
 installShareSync()
 
 createRoot(document.getElementById('root')!).render(

@@ -16,7 +16,7 @@ const DESCRIPTION = {
  */
 export function PlayerOverlay() {
   const { current, playerMode, minimizePlayer, expandPlayer, stopPlayer, isFavorite, toggleFavorite, lists, prefs, epg } = useMedia()
-  const modal = playerMode === 'modal'
+  const modal = playerMode === 'modal' && current !== null
 
   useEffect(() => {
     if (!modal) return
@@ -47,7 +47,7 @@ export function PlayerOverlay() {
         aria-label={`Oynatıcı: ${current.name}`}
         className={
           modal
-            ? 'fixed left-1/2 top-1/2 z-50 max-h-[96dvh] w-[min(1100px,96vw,calc((100dvh_-_250px)*1.7778))] min-w-[min(96vw,360px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/15 bg-[#14151a] shadow-2xl'
+            ? 'fixed left-1/2 top-1/2 z-50 max-h-[96dvh] w-[min(1100px,96vw,calc((100dvh_-_250px)*1.7778))] min-w-[min(96vw,360px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/15 bg-elev shadow-2xl'
             : 'fixed bottom-[4.5rem] right-3 z-40 w-64 overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl sm:w-80 lg:bottom-5 lg:right-5'
         }
       >
@@ -67,14 +67,14 @@ export function PlayerOverlay() {
 
             <div className="p-5 sm:p-6">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-md bg-[var(--accent)] px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">{KIND_BADGE[kind]}</span>
+                <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">{KIND_BADGE[kind]}</span>
                 <span className="truncate text-xs text-[var(--subtle)]">
                   {groupOf(current)}
                   {lists.active ? ` · ${lists.active.name}` : ''}
                 </span>
               </div>
               <h2 className="display mt-2 text-balance text-2xl font-semibold sm:text-3xl">{current.name}</h2>
-              {current.subtitle && <p className="mt-1 text-sm font-medium text-[var(--accent)]">{current.subtitle}</p>}
+              {current.subtitle && <p className="mt-1 text-sm font-medium text-accent">{current.subtitle}</p>}
               {kind === 'live' ? (
                 <EpgPanel channel={current} epg={epg} />
               ) : (
@@ -82,14 +82,14 @@ export function PlayerOverlay() {
               )}
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={() => toggleFavorite(current)} aria-pressed={fav} className={`btn-ghost ${fav ? '!border-[var(--accent)] !text-[var(--accent)]' : ''}`}>
+                <button type="button" onClick={() => toggleFavorite(current)} aria-pressed={fav} className={`btn-ghost ${fav ? '!border-accent !text-accent' : ''}`}>
                   <Heart size={16} fill={fav ? 'currentColor' : 'none'} aria-hidden="true" />
                   {fav ? 'Favorilerde' : 'Favorilere ekle'}
                 </button>
                 <button type="button" onClick={minimizePlayer} className="btn-ghost">
                   <Minimize2 size={16} aria-hidden="true" /> Küçült
                 </button>
-                <button type="button" onClick={stopPlayer} className="btn-ghost hover:!text-[var(--danger)]">
+                <button type="button" onClick={stopPlayer} className="btn-ghost hover:!text-danger">
                   <Power size={16} aria-hidden="true" /> Yayını kapat
                 </button>
               </div>
@@ -102,7 +102,7 @@ export function PlayerOverlay() {
               <button type="button" onClick={expandPlayer} aria-label="Büyüt" title="Büyüt" className="grid h-9 w-9 place-items-center rounded-full bg-black/55 text-white/85 hover:text-white">
                 <Maximize2 size={15} />
               </button>
-              <button type="button" onClick={stopPlayer} aria-label="Yayını kapat" title="Yayını kapat" className="grid h-9 w-9 place-items-center rounded-full bg-black/55 text-white/85 hover:text-[var(--danger)]">
+              <button type="button" onClick={stopPlayer} aria-label="Yayını kapat" title="Yayını kapat" className="grid h-9 w-9 place-items-center rounded-full bg-black/55 text-white/85 hover:text-danger">
                 <X size={16} />
               </button>
             </div>

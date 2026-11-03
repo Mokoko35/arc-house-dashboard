@@ -41,7 +41,7 @@ function FavoriteButton({ favorite, name, onClick }: { favorite: boolean; name: 
       aria-pressed={favorite}
       aria-label={favorite ? `${name} favorilerden çıkar` : `${name} favorilere ekle`}
       className={`absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-black/55 backdrop-blur transition ${
-        favorite ? 'text-[var(--accent)]' : 'text-white/80 opacity-100 hover:text-white lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100'
+        favorite ? 'text-accent' : 'text-white/80 opacity-100 hover:text-white lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100'
       }`}
     >
       <Heart size={16} fill={favorite ? 'currentColor' : 'none'} />
@@ -80,17 +80,17 @@ export function ChannelCard({ channel, active, favorite, showLogo, onPlay, onFav
         aria-label={`${channel.name} kanalını oynat`}
         aria-current={active || undefined}
         className={`block w-full overflow-hidden rounded-2xl border bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-white/25 ${
-          active ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/40' : 'border-white/10'
+          active ? 'border-accent ring-2 ring-accent/40' : 'border-white/10'
         }`}
       >
         <span className="relative block aspect-video overflow-hidden">
           <Artwork channel={channel} showLogo={showLogo} fit="contain" />
           <span className="absolute inset-0 grid place-items-center bg-black/40 opacity-0 transition group-hover:opacity-100">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-ink)]">
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-accent text-[var(--accent-ink)]">
               <Play size={20} fill="currentColor" aria-hidden="true" />
             </span>
           </span>
-          {active && <span className="absolute left-2 top-2 rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
+          {active && <span className="absolute left-2 top-2 rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
         </span>
         <span className="block p-3">
           <span className="block truncate text-sm font-medium text-[var(--ink-2)]">{channel.name}</span>
@@ -99,10 +99,10 @@ export function ChannelCard({ channel, active, favorite, showLogo, onPlay, onFav
               {epg.now && (
                 <>
                   <span className="mt-1 block truncate text-xs text-[var(--ink-2)]">
-                    <span className="font-semibold text-[var(--accent)]">Şimdi</span> {clock(epg.now.start)} {epg.now.title}
+                    <span className="font-semibold text-accent">Şimdi</span> {clock(epg.now.start)} {epg.now.title}
                   </span>
                   <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
-                    <span className="block h-full rounded-full bg-[var(--accent)]" style={{ width: `${Math.round(epg.progress * 100)}%` }} />
+                    <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(epg.progress * 100)}%` }} />
                   </span>
                 </>
               )}
@@ -135,17 +135,17 @@ export function PosterCard({ channel, active, favorite, showLogo, onPlay, onFavo
       >
         <span
           className={`relative block aspect-[2/3] overflow-hidden rounded-2xl border transition duration-200 group-hover:-translate-y-0.5 group-hover:border-white/25 ${
-            active ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/40' : 'border-white/10'
+            active ? 'border-accent ring-2 ring-accent/40' : 'border-white/10'
           }`}
         >
           <Artwork channel={channel} showLogo={showLogo} fit="cover" />
           <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
           <span className="absolute inset-0 grid place-items-center bg-black/40 opacity-0 transition group-hover:opacity-100">
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-ink)]">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-accent text-[var(--accent-ink)]">
               <Play size={22} fill="currentColor" aria-hidden="true" />
             </span>
           </span>
-          {active && <span className="absolute bottom-2 left-2 rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
+          {active && <span className="absolute bottom-2 left-2 rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
           {channel.rating !== undefined && !active && (
             <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-amber-300">
               <Star size={11} fill="currentColor" aria-hidden="true" /> {channel.rating.toFixed(1)}

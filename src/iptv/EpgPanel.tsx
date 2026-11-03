@@ -23,14 +23,14 @@ export function EpgPanel({ channel, epg }: { channel: Channel; epg: Epg }) {
   return (
     <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       {guide.now ? (
-        <section aria-label="Şimdi oynuyor" className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 p-4">
-          <p className="label text-[var(--accent)]">Şimdi</p>
+        <section aria-label="Şimdi oynuyor" className="rounded-2xl border border-accent/30 bg-accent/10 p-4">
+          <p className="label text-accent">Şimdi</p>
           <p className="mt-1 text-base font-semibold text-[var(--ink)]">{guide.now.title}</p>
           <p className="text-xs tabular-nums text-[var(--subtle)]">
             {clock(guide.now.start)} - {clock(guide.now.stop)}
           </p>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={Math.round(guide.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Programın ilerlemesi">
-            <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${Math.round(guide.progress * 100)}%` }} />
+            <div className="h-full rounded-full bg-accent" style={{ width: `${Math.round(guide.progress * 100)}%` }} />
           </div>
           {guide.now.desc && <p className="mt-2 line-clamp-3 text-pretty text-xs text-[var(--ink-2)]">{guide.now.desc}</p>}
         </section>

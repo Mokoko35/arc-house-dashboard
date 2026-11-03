@@ -20,8 +20,8 @@ export function ActivityPill() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-40 flex justify-center px-4" role="status" aria-live="polite">
-      <div className="flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-[#14151a]/95 px-4 py-2 text-xs text-[var(--ink-2)] shadow-xl backdrop-blur">
-        <Loader2 size={14} className="shrink-0 animate-spin text-[var(--accent)]" aria-hidden="true" />
+      <div className="flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-elev/95 px-4 py-2 text-xs text-[var(--ink-2)] shadow-xl backdrop-blur">
+        <Loader2 size={14} className="shrink-0 animate-spin text-accent" aria-hidden="true" />
         <span className="truncate tabular-nums">{message}</span>
       </div>
     </div>
