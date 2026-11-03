@@ -1,61 +1,58 @@
 # IPTV Player
 
-An IPTV player for Windows (desktop app) and the browser. Add playlists from an M3U address, an Xtream-style portal login, a file or pasted text, then search, group, favorite and watch channels. The app provides no channels or content; it only plays lists you add. An optional USDC tip button lets you send a thank-you to whoever provides a list.
+A media-center style IPTV player for Windows and the browser. Add your own playlists from an M3U address, an Xtream-style portal login, a file or pasted text, then browse live TV, movies and series in a clean dark interface. The app provides no channels or content; it only plays lists you add.
 
 Built with [Arc Studio](https://studio.arc.io)
 
-## Pages
+## Features
 
-- **IPTV Player** (`/`): a media-center style player with a sidebar (Home, Live TV, Movies, Series, Settings), card grids, a category manager and a settings page (General, Playback, EPG, Category Management). Movies and series open a detail window with the real poster, synopsis, cast, director, rating, trailer link and, for series, seasons and episodes. This uses an Xtream portal's `player_api.php` (`get_vod_info`, `get_vod_streams`, `get_series`, `get_series_info`), so it needs a list added as a portal login or a `get.php` address; plain M3U lists play straight from the grid. Portal responses are cached on the device for up to 12 hours (details for up to 7 days). EPG, buffer size and hardware decoding settings are saved but not applied yet.
-- **Liquidation Levels** (`/liquidation.html`): manually entered BTC and ETH liquidation clusters tracked against the live CoinGecko price.
-- **Coin Heatmap** (`/heatmap.html`): top 20 coins by market cap, colored by 24h change.
-- **Arc House Dashboard** (`/dashboard.html`): wallet, Arc House profile and GitHub dashboard (described below).
+- **Add lists several ways:** M3U address, portal login (server, username, password), `.m3u` / `.m3u8` file, or pasted text. Keep several lists and switch between them.
+- **Live TV, Movies and Series** in separate sections with a sidebar, card grids, search, categories and favorites.
+- **Real movie and series details** from Xtream portals: poster, synopsis, cast, director, rating, trailer link, and seasons with episodes.
+- **Category manager:** show or hide categories per section.
+- **Settings:** list management, card size, logos, autoplay, and EPG address (saved for a future release).
+- **Playback** of HLS (`.m3u8`) and MPEG-TS (`.ts`) streams, plus common video files.
+- **Private by design:** lists, favorites and settings stay on your device.
 
 ## Windows desktop app
 
-A browser cannot read most IPTV servers (they send no CORS headers) and blocks `http://` streams on `https://` pages. The desktop app has neither limit.
+A browser cannot read most IPTV servers (they do not allow it) and blocks `http://` streams on `https://` pages. The desktop app has neither limit, so use it for the best results.
 
-Prerequisites: Windows, [Node.js](https://nodejs.org) 20 or newer (or Bun).
+Prerequisites: Windows and [Node.js](https://nodejs.org) 20 or newer.
 
 ```
 npm install
 npm run desktop:build
 ```
 
-The installer is written to `release/` (an `IPTV Player Setup ... .exe`). To try it without building an installer, run `npm run dev` in one terminal and `npm run desktop:dev` in another. With Bun, use `bun install` and `bun run ...` instead.
+The installer is written to the `release/` folder (an `IPTV Player Setup ... .exe`). To try the desktop app without building an installer, run `npm run dev` in one terminal and `npm run desktop:dev` in another.
 
 The desktop build has not been tested on Windows by Arc Studio.
 
-## Playlists
-
-- Lists and channels are stored in the browser's IndexedDB on your device. Favorites and the last channel are stored in local storage.
-- HLS (`.m3u8`) and MPEG-TS (`.ts`) streams play through hls.js and mpegts.js. Codec support depends on the browser or the desktop app.
-
-## Arc House Dashboard
-
-A personal dashboard for Arc House community members. It shows your Arc Testnet wallet (USDC balance, transaction count, address) next to your Arc House profile (points, tier, badges), which you import or edit by hand. The interface is available in Turkish (default) and English, switchable from the header. It also shows GitHub stats (repos, stars, followers, recent activity) for the user Mokoko35 from the public GitHub API, and a chat assistant in the bottom right with a Daily Briefing that summarizes wallet, Arc House and GitHub data.
-
-Built with [Arc Studio](https://studio.arc.io)
-
-## Tech stack
-
-React, TypeScript, Vite, Tailwind CSS, wagmi, viem, ConnectKit. Translations live in `src/i18n/` (`en.ts`, `tr.ts`); add a key to both files to add new text.
-
 ## Development
 
-Prerequisites: [Bun](https://bun.sh).
+Prerequisites: [Node.js](https://nodejs.org) 20 or newer, or [Bun](https://bun.sh).
 
 ```
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
-Other scripts: `bun run build`, `bun run check` (lint and typecheck).
+Open the address Vite prints. Other scripts:
+
+- `npm run build`: production build into `dist/`
+- `npm run check`: lint and type check
+- `npm run desktop:dev`: desktop app against the dev server
+- `npm run desktop:build`: Windows installer
+
+With Bun, use `bun install` and `bun run ...` instead.
 
 ### Environment variables
 
-- `VITE_WALLETCONNECT_PROJECT_ID`: your WalletConnect (Reown) project ID, from https://cloud.reown.com. Enables connecting mobile wallets such as MetaMask and Trust Wallet. Without it, only browser extensions and Coinbase Wallet are offered. Add your site's domain to the project's allowed domains.
+None.
 
-### Arc House data
+## Notes
 
-Arc House has no public API, and its data endpoint only answers signed-in members on community.arc.io. The dashboard offers a one-click bookmark ("Sync Arc House") that runs on community.arc.io with your own login and sends your points, tier and badges back to the dashboard. Manual JSON import and manual editing remain as a fallback. Data is stored only in your browser.
+- Movie and series details need a list added as a portal login or as a `get.php` address. Plain M3U lists play straight from the grid.
+- Portal responses are cached on your device for up to 12 hours (details for up to 7 days).
+- Lists and posters are stored in the browser's IndexedDB and local storage.

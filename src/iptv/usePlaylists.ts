@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { deletePlaylist, getChannels, listPlaylists, savePlaylist, updateMeta } from './db'
+import { deletePlaylist, getChannels, listPlaylists, savePlaylist } from './db'
 import { channelsFromText, channelsFromUrl, loadErrorText } from './load'
 import { hashId } from './m3u'
 import { loadLast } from './storage'
@@ -24,7 +24,6 @@ export interface PlaylistsState {
   add: (input: AddInput) => Promise<boolean>
   refresh: (id: string) => Promise<void>
   remove: (id: string) => Promise<void>
-  setProviderAddress: (id: string, address: string) => Promise<void>
   clearError: () => void
 }
 
@@ -148,17 +147,6 @@ export function usePlaylists(): PlaylistsState {
     [activeId, activate],
   )
 
-  const setProviderAddress = useCallback(
-    async (id: string, address: string) => {
-      const meta = playlists.find((p) => p.id === id)
-      if (!meta) return
-      const next: PlaylistMeta = { ...meta, providerAddress: address || undefined }
-      await updateMeta(next)
-      setPlaylists((prev) => prev.map((p) => (p.id === id ? next : p)))
-    },
-    [playlists],
-  )
-
   return {
     playlists,
     active: playlists.find((p) => p.id === activeId) ?? null,
@@ -170,7 +158,6 @@ export function usePlaylists(): PlaylistsState {
     add,
     refresh,
     remove,
-    setProviderAddress,
     clearError: () => setError(null),
   }
 }

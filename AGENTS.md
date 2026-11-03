@@ -1,43 +1,42 @@
-# [App Name]
+# IPTV Player
 
-> Built with Arc Studio - money-powered apps in minutes
+> Built with Arc Studio
 
-This is the **project memory** - what Arc Studio remembers about building this app. It helps future agents (or humans) understand and extend the project.
+Project memory for future agents and humans.
 
----
+## What this app does
 
-## What This App Does
+An IPTV player (browser and Windows desktop app). Users add M3U / Xtream lists and browse Live TV, Movies and Series with a sidebar, card grids, a category manager, settings and, for Xtream portals, real movie and series details. It provides no content.
 
-[Brief description of what the app does and its primary use case]
+## Tech stack
 
-## Tech Stack
+- React 18, Vite, TypeScript, Tailwind CSS 3
+- hls.js and mpegts.js for playback; lucide-react for icons
+- IndexedDB (lists, channels, API cache) and localStorage (favorites, settings, hidden categories)
+- Electron + electron-builder for the Windows app (`electron/main.mjs`)
+- No wallet, blockchain or backend code
 
-- Frontend: React 18, Vite, TypeScript, Tailwind CSS
-- Web3: wagmi v2, viem v2, ConnectKit
-- Contracts: Solidity 0.8.28 + Foundry. Sources in `contracts/`, unit tests in `contracts/test/*.t.sol`. Build with `bun run contracts:build` (`forge build`), test with `bun run contracts:test` (`forge test`).
-- Wallet: injected (MetaMask, etc.)
-- Chain: Arc Testnet (Chain ID: 5042002, imported from `viem/chains`)
-- Token: USDC (6 decimals) (Address: 0x3600000000000000000000000000000000000000, Chain: Arc Testnet)
-- Toasts: Sonner
+## Key files
 
-## Key Files
+- `src/main.tsx` - entry; keep the `installShareSync()` call
+- `src/App.tsx` - shell: sidebar, pages, dialogs
+- `src/iptv/` - the app: routing (`router.ts`, hash based), state (`MediaProvider.tsx`, `context.ts`, `useMedia.ts`), pages, cards, dialogs
+- `src/iptv/m3u.ts`, `xtream.ts`, `xtreamApi.ts` - playlist parsing and Xtream `player_api.php` calls (cached)
+- `src/iptv/db.ts`, `storage.ts`, `prefs.ts` - persistence
+- `src/index.css` - tokens and the `.theme-media` orange-on-dark theme
+- `src/tracing.ts`, `src/console-capture.ts`, `src/lib/share.ts` - Arc Studio platform helpers; leave as they are
 
-- `src/App.tsx` - Main application logic
-- `src/components/` - UI components
-- `src/config.ts` - wagmi config (chains, connectors, transports)
+## Notes
 
-## Share links
+- Routing uses `#/...` so it also works from `file://` in the desktop app.
+- Browsers block most IPTV servers (CORS) and `http://` streams on `https://` pages; the desktop app removes those limits.
+- Movie and series details use the Xtream API, so they need a portal login (or a `get.php` address).
 
-- Starter apps already ship `getShareBase`, `buildShareLink` and `installShareSync` in `src/lib/share.ts`; import them instead of rewriting them.
-- Keep shareable state in the URL path or query, not in the `#fragment`.
-- Never put a secret (private key, claim secret, seed phrase, session token, API key) in the URL path or query, encoded or not: every in-app path and query is mirrored to the visitor's studio.arc.io address bar and browser history and reaches servers. A bearer claim secret goes only in the `#fragment` appended to the share link (`` `${await buildShareLink('/claim')}#${secret}` ``) and is read from `location.hash` on load. A link to the app's own share URL shown inside the app must be copy-only or open in a new tab with `target="_blank" rel="noopener noreferrer"`.
-- Build every link a user copies or sends with `buildShareLink()` from `src/lib/share.ts`.
-- Keep the `installShareSync()` call in `src/main.tsx` when editing it; it keeps the Studio address bar in step with in-app navigation.
-- Navigate inside the app with relative links.
-
-## To Run
+## To run
 
 ```bash
 bun install
-bun run dev
+bun run dev      # http://localhost:5173
+bun run check    # lint and typecheck
+bun run build
 ```

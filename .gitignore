@@ -1,13 +1,9 @@
 node_modules
 dist
+release
 .env
 .env.*
-.circle/
-recovery_file*
-traces.jsonl
-console.jsonl
-contracts/out
-contracts/cache
 *.log
 .DS_Store
-release
+traces.jsonl
+console.jsonl

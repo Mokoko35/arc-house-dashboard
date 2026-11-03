@@ -1,59 +1,9 @@
-import { Suspense, lazy, useState } from 'react'
-import { isAddress } from 'viem'
-import { Check, Coins, ListPlus, RefreshCw, Trash2 } from 'lucide-react'
+import { Check, ListPlus, RefreshCw, Trash2 } from 'lucide-react'
 import { Section } from './SettingsControls'
 import type { PlaylistMeta } from './types'
 import { useMedia } from './useMedia'
 
-const TipModule = lazy(() => import('./TipModule'))
-
 const KIND_TEXT: Record<PlaylistMeta['kind'], string> = { url: 'M3U adresi', xtream: 'Portal', file: 'Dosya', text: 'Yapıştırılan' }
-
-function ProviderBox({ playlist }: { playlist: PlaylistMeta }) {
-  const { lists } = useMedia()
-  const [draft, setDraft] = useState<string | null>(null)
-  const [tipping, setTipping] = useState(false)
-  const value = draft ?? playlist.providerAddress ?? ''
-  const valid = isAddress(value)
-  const saved = playlist.providerAddress && isAddress(playlist.providerAddress) ? playlist.providerAddress : null
-
-  return (
-    <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
-      <label htmlFor={`prov-${playlist.id}`} className="label mb-1.5 block">
-        Liste sağlayıcısının USDC adresi (isteğe bağlı)
-      </label>
-      <input
-        id={`prov-${playlist.id}`}
-        value={value}
-        onChange={(e) => setDraft(e.target.value.trim())}
-        placeholder="0x..."
-        autoComplete="off"
-        spellCheck={false}
-        aria-invalid={value !== '' && !valid}
-        className="field mono !text-xs"
-      />
-      {value !== '' && !valid && <p className="mt-1 text-xs text-[var(--danger)]">Geçerli bir 0x adresi gir.</p>}
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={draft === null || (value !== '' && !valid)}
-          onClick={() => void lists.setProviderAddress(playlist.id, value).then(() => setDraft(null))}
-          className="btn-ghost !min-h-10"
-        >
-          Kaydet
-        </button>
-        <button type="button" disabled={!saved || draft !== null} onClick={() => setTipping(true)} className="btn-ghost !min-h-10">
-          <Coins size={15} aria-hidden="true" /> USDC bahşiş gönder
-        </button>
-      </div>
-      {tipping && saved && (
-        <Suspense fallback={null}>
-          <TipModule provider={saved} listName={playlist.name} onClose={() => setTipping(false)} />
-        </Suspense>
-      )}
-    </div>
-  )
-}
 
 export function PlaylistManager() {
   const { lists, openAdd } = useMedia()
@@ -109,7 +59,6 @@ export function PlaylistManager() {
                     </button>
                   </div>
                 </div>
-                {isActive && <ProviderBox key={p.id} playlist={p} />}
               </div>
             )
           })}

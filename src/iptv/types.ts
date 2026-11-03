@@ -32,6 +32,4 @@ export interface PlaylistMeta {
   xtream?: XtreamLogin
   channelCount: number
   updatedAt: number
-  /** Optional USDC address of whoever provides the list, used by the tip button. */
-  providerAddress?: string
 }

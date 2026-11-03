@@ -55,12 +55,6 @@ export async function savePlaylist(meta: PlaylistMeta, channels: Channel[]): Pro
   })
 }
 
-export async function updateMeta(meta: PlaylistMeta): Promise<void> {
-  await run([META], 'readwrite', (tx) => {
-    tx.objectStore(META).put(meta)
-  })
-}
-
 export interface CacheEntry<T> {
   savedAt: number
   value: T
