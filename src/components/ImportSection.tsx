@@ -9,6 +9,7 @@ import {
   dedupeBadges,
   parseArcHouseJson,
 } from '@/lib/arcHouse'
+import { useI18n } from '@/i18n/useI18n'
 
 type Tab = 'json' | 'manual'
 
@@ -18,56 +19,63 @@ interface Props {
 }
 
 function JsonImport({ onChange }: { onChange: Props['onChange'] }) {
+  const { t } = useI18n()
   const [text, setText] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [errorKey, setErrorKey] = useState<string | null>(null)
 
   const run = () => {
     const result = parseArcHouseJson(text)
     if (!result.ok) {
-      setError(result.error)
+      setErrorKey(result.errorKey)
       return
     }
-    setError(null)
+    setErrorKey(null)
     onChange(result.profile)
     setText('')
-    toast.success(`Imported ${result.found.join(', ')}.`)
+    const parts = [
+      result.found.points ? t('import.found.points') : null,
+      result.found.tier ? t('import.found.tier') : null,
+      result.found.badges !== null ? t('unit.badge', { n: result.found.badges }) : null,
+    ].filter((p): p is string => p !== null)
+    toast.success(t('import.imported', { found: parts.join(', ') }))
   }
 
   return (
     <div className="space-y-3">
       <label htmlFor="ah-json" className="label block">
-        Exported Arc House JSON
+        {t('import.jsonLabel')}
       </label>
       <textarea
         id="ah-json"
         value={text}
         onChange={(e) => {
           setText(e.target.value)
-          if (error) setError(null)
+          if (errorKey) setErrorKey(null)
         }}
         rows={8}
         spellCheck={false}
         placeholder={SAMPLE_JSON}
         className="field mono !text-[13px] resize-y"
-        aria-invalid={error !== null}
+        aria-invalid={errorKey !== null}
       />
-      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
+      {errorKey && <p className="text-sm text-[var(--danger)]">{t(errorKey)}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={run} disabled={!text.trim()} className="btn-primary">
-          <FileJson size={16} /> Import data
+          <FileJson size={16} /> {t('import.jsonRun')}
         </button>
         <button type="button" onClick={() => setText(SAMPLE_JSON)} className="btn-ghost">
-          Use example
+          {t('import.jsonExample')}
         </button>
       </div>
       <p className="text-xs text-[var(--subtle)]">
-        Recognized keys: points, tier, badges, handle. Data stays in this browser.
+        {t('import.jsonHint')}
       </p>
     </div>
   )
 }
 
 function ManualEdit({ profile, onChange }: Props) {
+  const { t } = useI18n()
   const base = profile ?? EMPTY_PROFILE
   const [points, setPoints] = useState(String(base.points))
   const [tier, setTier] = useState(base.tier)
@@ -92,7 +100,7 @@ function ManualEdit({ profile, onChange }: Props) {
       badges,
       updatedAt: Date.now(),
     })
-    toast.success('Profile updated.')
+    toast.success(t('import.saved'))
   }
 
   return (
@@ -100,7 +108,7 @@ function ManualEdit({ profile, onChange }: Props) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="ah-points" className="label mb-2 block">
-            Points
+            {t('import.points')}
           </label>
           <input
             id="ah-points"
@@ -110,18 +118,18 @@ function ManualEdit({ profile, onChange }: Props) {
             className="field tabular-nums"
             aria-invalid={!pointsValid}
           />
-          {!pointsValid && <p className="mt-1.5 text-xs text-[var(--danger)]">Enter a whole number.</p>}
+          {!pointsValid && <p className="mt-1.5 text-xs text-[var(--danger)]">{t('import.pointsInvalid')}</p>}
         </div>
         <div>
           <label htmlFor="ah-tier" className="label mb-2 block">
-            Tier
+            {t('import.tier')}
           </label>
           <input
             id="ah-tier"
             value={tier}
             maxLength={40}
             onChange={(e) => setTier(e.target.value)}
-            placeholder="Tier 0, Architect..."
+            placeholder={t('import.tierPlaceholder')}
             className="field"
           />
         </div>
@@ -129,7 +137,7 @@ function ManualEdit({ profile, onChange }: Props) {
 
       <div>
         <label htmlFor="ah-badge" className="label mb-2 block">
-          Badges
+          {t('import.badges')}
         </label>
         <div className="flex gap-2">
           <input
@@ -143,10 +151,10 @@ function ManualEdit({ profile, onChange }: Props) {
                 addBadge()
               }
             }}
-            placeholder="Add a badge name"
+            placeholder={t('import.badgePlaceholder')}
             className="field"
           />
-          <button type="button" onClick={addBadge} disabled={!badgeDraft.trim()} className="btn-ghost shrink-0" aria-label="Add badge">
+          <button type="button" onClick={addBadge} disabled={!badgeDraft.trim()} className="btn-ghost shrink-0" aria-label={t('import.addBadge')}>
             <Plus size={16} />
           </button>
         </div>
@@ -161,7 +169,7 @@ function ManualEdit({ profile, onChange }: Props) {
                 <button
                   type="button"
                   onClick={() => setBadges((prev) => prev.filter((x) => x.name !== b.name))}
-                  aria-label={`Remove ${b.name}`}
+                  aria-label={t('import.removeBadge', { name: b.name })}
                   className="grid h-6 w-6 place-items-center rounded-full text-[var(--subtle)] hover:bg-white/10 hover:text-[var(--ink)]"
                 >
                   <X size={13} />
@@ -173,27 +181,28 @@ function ManualEdit({ profile, onChange }: Props) {
       </div>
 
       <button type="button" onClick={save} disabled={!pointsValid} className="btn-primary">
-        Save changes
+        {t('import.save')}
       </button>
     </div>
   )
 }
 
 export function ImportSection({ profile, onChange }: Props) {
+  const { t } = useI18n()
   const [tab, setTab] = useState<Tab>('json')
 
   const tabs: { id: Tab; label: string; icon: typeof FileJson }[] = [
-    { id: 'json', label: 'Paste JSON', icon: FileJson },
-    { id: 'manual', label: 'Edit manually', icon: SlidersHorizontal },
+    { id: 'json', label: t('import.tabJson'), icon: FileJson },
+    { id: 'manual', label: t('import.tabManual'), icon: SlidersHorizontal },
   ]
 
   return (
-    <section id="import" className="card p-6 sm:p-8" aria-labelledby="import-title">
+    <section id="import" className="card p-5 sm:p-6 lg:p-8" aria-labelledby="import-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="label">Update your profile</p>
+          <p className="label">{t('import.eyebrow')}</p>
           <h2 id="import-title" className="display mt-1 text-2xl font-semibold">
-            Import data
+            {t('import.title')}
           </h2>
         </div>
         {profile && (
@@ -201,19 +210,19 @@ export function ImportSection({ profile, onChange }: Props) {
             type="button"
             onClick={() => {
               onChange(null)
-              toast('Arc House data cleared.')
+              toast(t('import.cleared'))
             }}
             className="btn-ghost !text-[var(--danger)]"
           >
-            <Trash2 size={15} /> Clear data
+            <Trash2 size={15} /> {t('import.clear')}
           </button>
         )}
       </div>
       <p className="mt-2 max-w-xl text-pretty text-sm text-[var(--subtle)]">
-        Arc House has no public API. Paste your exported data or edit the numbers yourself. Nothing leaves your browser.
+        {t('import.desc')}
       </p>
 
-      <div role="tablist" aria-label="Import method" className="mt-5 inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">
+      <div role="tablist" aria-label={t('import.tabsAria')} className="mt-5 inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

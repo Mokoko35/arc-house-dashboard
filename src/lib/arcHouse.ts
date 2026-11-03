@@ -80,18 +80,25 @@ export function dedupeBadges(badges: Badge[]): Badge[] {
   })
 }
 
-export type ParseResult = { ok: true; profile: ArcHouseProfile; found: string[] } | { ok: false; error: string }
+export interface FoundFields {
+  points: boolean
+  tier: boolean
+  badges: number | null
+}
+
+/** `errorKey` is a message key (see src/i18n) so the UI can show it in the active language. */
+export type ParseResult = { ok: true; profile: ArcHouseProfile; found: FoundFields } | { ok: false; errorKey: string }
 
 /** Parse a pasted Arc House export. Accepts a few common key spellings and nested wrappers. */
 export function parseArcHouseJson(text: string): ParseResult {
   const trimmed = text.trim()
-  if (!trimmed) return { ok: false, error: 'Paste your exported JSON first.' }
+  if (!trimmed) return { ok: false, errorKey: 'parse.empty' }
 
   let raw: unknown
   try {
     raw = JSON.parse(trimmed)
   } catch {
-    return { ok: false, error: 'That is not valid JSON. Check for missing quotes or trailing commas.' }
+    return { ok: false, errorKey: 'parse.invalid' }
   }
 
   let root: unknown = Array.isArray(raw) ? raw[0] : raw
@@ -100,7 +107,7 @@ export function parseArcHouseJson(text: string): ParseResult {
       root = root[wrapper]
     }
   }
-  if (!isObject(root)) return { ok: false, error: 'Expected a JSON object with points, tier, or badges.' }
+  if (!isObject(root)) return { ok: false, errorKey: 'parse.notObject' }
 
   const points = toPoints(pick(root, ['points', 'totalPoints', 'total_points', 'xp', 'score']))
   const tier = toTier(pick(root, ['tier', 'tierName', 'tier_name', 'level', 'rank']))
@@ -111,12 +118,9 @@ export function parseArcHouseJson(text: string): ParseResult {
   const handleRaw = pick(root, ['handle', 'username', 'name', 'displayName'])
   const handle = typeof handleRaw === 'string' && handleRaw.trim() ? handleRaw.trim().slice(0, 40) : undefined
 
-  const found: string[] = []
-  if (points !== undefined) found.push('points')
-  if (tier !== undefined) found.push('tier')
-  if (badges !== undefined) found.push(`${badges.length} badge${badges.length === 1 ? '' : 's'}`)
-  if (found.length === 0) {
-    return { ok: false, error: 'No points, tier, or badges found. Expected keys like "points", "tier", and "badges".' }
+  const found: FoundFields = { points: points !== undefined, tier: tier !== undefined, badges: badges?.length ?? null }
+  if (!found.points && !found.tier && found.badges === null) {
+    return { ok: false, errorKey: 'parse.nothing' }
   }
 
   return {
@@ -130,6 +134,120 @@ export function parseArcHouseJson(text: string): ParseResult {
       updatedAt: Date.now(),
     },
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Loose extraction from Arc House GraphQL responses (shape unverified) */
+/* ------------------------------------------------------------------ */
+
+const asArray = (v: unknown): unknown[] | null => (Array.isArray(v) ? (v as unknown[]) : null)
+
+function findDeep(root: unknown, keys: string[], accept: (v: unknown) => boolean): unknown {
+  for (const key of keys.map((k) => k.toLowerCase())) {
+    const queue: unknown[] = [root]
+    let visited = 0
+    while (queue.length > 0 && visited < 5000) {
+      const cur = queue.shift()
+      visited++
+      const arr = asArray(cur)
+      if (arr) {
+        queue.push(...arr.slice(0, 200))
+      } else if (isObject(cur)) {
+        for (const [k, v] of Object.entries(cur)) {
+          if (k.toLowerCase() === key && accept(v)) return v
+        }
+        queue.push(...Object.values(cur))
+      }
+    }
+  }
+  return undefined
+}
+
+/** Build a profile from any number of raw GraphQL `data` objects. Returns null if nothing recognizable. */
+export function extractProfile(sources: unknown[]): ArcHouseProfile | null {
+  let points: number | undefined
+  let tier: string | undefined
+  let badges: Badge[] | undefined
+  let handle: string | undefined
+
+  for (const src of sources) {
+    points ??= toPoints(
+      findDeep(src, ['totalPoints', 'currentPoints', 'pointBalance', 'points', 'point'], (v) => toPoints(v) !== undefined),
+    )
+    tier ??= toTier(findDeep(src, ['tierName', 'tier', 'levelName', 'level'], (v) => toTier(v) !== undefined))
+    if (!badges) {
+      const arr = asArray(
+        findDeep(src, ['badges', 'earnedBadges', 'myBadges'], (v) => asArray(v)?.some((b) => toBadge(b)) === true),
+      )
+      if (arr) badges = dedupeBadges(arr.map(toBadge).filter((b): b is Badge => b !== undefined))
+    }
+    const h = findDeep(src, ['username', 'displayName', 'fullName'], (v) => typeof v === 'string' && v.trim() !== '')
+    if (!handle && typeof h === 'string') handle = h.trim().slice(0, 40)
+  }
+
+  if (points === undefined && tier === undefined && badges === undefined) return null
+  return {
+    handle,
+    points: points ?? 0,
+    tier: tier ?? EMPTY_PROFILE.tier,
+    badges: badges ?? [],
+    updatedAt: Date.now(),
+  }
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  name: string
+  points: number
+}
+
+function firstString(o: Json, keys: string[]): string | undefined {
+  for (const k of keys) {
+    const v = o[k]
+    if (typeof v === 'string' && v.trim()) return v.trim().slice(0, 60)
+  }
+  return undefined
+}
+
+function firstNumber(o: Json, keys: string[]): number | undefined {
+  for (const k of keys) {
+    const n = toPoints(o[k])
+    if (n !== undefined) return n
+  }
+  return undefined
+}
+
+/** Find the first list of objects that looks like "name + points" rows. */
+export function extractLeaderboard(root: unknown): LeaderboardEntry[] {
+  const queue: unknown[] = [root]
+  let visited = 0
+  while (queue.length > 0 && visited < 5000) {
+    const cur = queue.shift()
+    visited++
+    const list = asArray(cur)
+    if (list) {
+      const rows = list
+        .map((item) => {
+          if (!isObject(item)) return undefined
+          // Rows are sometimes wrapped, e.g. { user: { name }, totalPoints }
+          const user = isObject(item.user) ? item.user : isObject(item.member) ? item.member : item
+          const name = firstString(user, ['displayName', 'fullName', 'name', 'username', 'handle'])
+          const points = firstNumber(item, ['totalPoints', 'points', 'score', 'contributionPoints'])
+          return name !== undefined && points !== undefined ? { name, points } : undefined
+        })
+        .filter((r): r is { name: string; points: number } => r !== undefined)
+      if (rows.length >= 2) {
+        return rows
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 25)
+          .map((r, i) => ({ rank: i + 1, ...r }))
+      }
+      queue.push(...list.slice(0, 200))
+    } else if (isObject(cur)) {
+      queue.push(...Object.values(cur))
+    }
+  }
+  return []
 }
 
 export function loadProfile(): ArcHouseProfile | null {

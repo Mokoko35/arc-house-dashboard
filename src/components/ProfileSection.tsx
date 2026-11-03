@@ -1,27 +1,20 @@
 import { Award, Crown, Sparkles, Trophy } from 'lucide-react'
 import type { ArcHouseProfile } from '@/lib/arcHouse'
-
-function timeAgo(ts: number): string {
-  const mins = Math.round((Date.now() - ts) / 60_000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.round(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.round(hours / 24)}d ago`
-}
+import { relativeTime, useI18n } from '@/i18n/useI18n'
 
 export function ProfileSection({ profile, onImport }: { profile: ArcHouseProfile | null; onImport: () => void }) {
+  const { t, locale } = useI18n()
   return (
-    <section className="card p-6 sm:p-8" aria-labelledby="profile-title">
+    <section className="card p-5 sm:p-6 lg:p-8" aria-labelledby="profile-title">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="label">Section 2</p>
+          <p className="label">{t('profile.section')}</p>
           <h2 id="profile-title" className="display mt-1 text-2xl font-semibold">
-            Arc House Profile
+            {t('profile.title')}
           </h2>
         </div>
         {profile && profile.updatedAt > 0 && (
-          <span className="text-xs text-[var(--subtle)]">Updated {timeAgo(profile.updatedAt)}</span>
+          <span className="text-xs text-[var(--subtle)]">{t('profile.updated', { when: relativeTime(profile.updatedAt, locale, t('time.now')) })}</span>
         )}
       </div>
 
@@ -31,30 +24,30 @@ export function ProfileSection({ profile, onImport }: { profile: ArcHouseProfile
             <Sparkles size={22} className="text-[var(--accent)]" />
           </div>
           <div>
-            <p className="display text-lg font-semibold">No Arc House data yet</p>
+            <p className="display text-lg font-semibold">{t('profile.emptyTitle')}</p>
             <p className="mt-1 max-w-xs text-pretty text-sm text-[var(--subtle)]">
-              Arc House has no public API, so import your exported JSON or enter your points by hand.
+              {t('profile.emptyDesc')}
             </p>
           </div>
           <button type="button" onClick={onImport} className="btn-ghost">
-            Go to import
+            {t('profile.goSync')}
           </button>
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 xl:grid-cols-2">
             <div className="inner p-5">
               <p className="label flex items-center gap-1.5">
-                <Trophy size={12} /> Points
+                <Trophy size={12} /> {t('profile.points')}
               </p>
-              <p className="display mt-2 text-5xl font-semibold tabular-nums">
-                {profile.points.toLocaleString('en-US')}
+              <p className="display mt-2 text-4xl font-semibold tabular-nums sm:text-5xl">
+                {profile.points.toLocaleString(locale)}
               </p>
               {profile.handle && <p className="mt-2 truncate text-sm text-[var(--subtle)]">@{profile.handle.replace(/^@/, '')}</p>}
             </div>
             <div className="inner p-5">
               <p className="label flex items-center gap-1.5">
-                <Crown size={12} /> Current tier
+                <Crown size={12} /> {t('profile.tier')}
               </p>
               <p className="display mt-2 text-3xl font-semibold text-[var(--accent)]">{profile.tier}</p>
             </div>
@@ -63,12 +56,12 @@ export function ProfileSection({ profile, onImport }: { profile: ArcHouseProfile
           <div className="inner p-5">
             <div className="flex items-center justify-between">
               <p className="label flex items-center gap-1.5">
-                <Award size={12} /> Badges
+                <Award size={12} /> {t('profile.badges')}
               </p>
               <span className="text-xs tabular-nums text-[var(--subtle)]">{profile.badges.length}</span>
             </div>
             {profile.badges.length === 0 ? (
-              <p className="mt-3 text-sm text-[var(--subtle)]">No badges recorded yet.</p>
+              <p className="mt-3 text-sm text-[var(--subtle)]">{t('profile.noBadges')}</p>
             ) : (
               <ul className="mt-3 flex flex-wrap gap-2">
                 {profile.badges.map((b) => (

@@ -1,0 +1,67 @@
+import type { Channel, PlaylistMeta } from './types'
+
+/** Playlists can hold tens of thousands of channels, which is too big for localStorage, so they live in IndexedDB. */
+const DB_NAME = 'iptv-player'
+const META = 'playlists'
+const CHANNELS = 'channels'
+
+function open(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1)
+    req.onupgradeneeded = () => {
+      const db = req.result
+      if (!db.objectStoreNames.contains(META)) db.createObjectStore(META, { keyPath: 'id' })
+      if (!db.objectStoreNames.contains(CHANNELS)) db.createObjectStore(CHANNELS)
+    }
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error ?? new Error('IndexedDB açılamadı'))
+  })
+}
+
+function run<T>(stores: string[], mode: IDBTransactionMode, work: (tx: IDBTransaction) => IDBRequest<T> | void): Promise<T | undefined> {
+  return open().then(
+    (db) =>
+      new Promise<T | undefined>((resolve, reject) => {
+        const tx = db.transaction(stores, mode)
+        const req = work(tx)
+        tx.oncomplete = () => {
+          db.close()
+          resolve(req ? req.result : undefined)
+        }
+        tx.onerror = () => {
+          db.close()
+          reject(tx.error ?? new Error('IndexedDB hatası'))
+        }
+        tx.onabort = tx.onerror
+      }),
+  )
+}
+
+export async function listPlaylists(): Promise<PlaylistMeta[]> {
+  const all = (await run<PlaylistMeta[]>([META], 'readonly', (tx) => tx.objectStore(META).getAll())) ?? []
+  return all.sort((a, b) => b.updatedAt - a.updatedAt)
+}
+
+export async function getChannels(playlistId: string): Promise<Channel[]> {
+  return (await run<Channel[]>([CHANNELS], 'readonly', (tx) => tx.objectStore(CHANNELS).get(playlistId))) ?? []
+}
+
+export async function savePlaylist(meta: PlaylistMeta, channels: Channel[]): Promise<void> {
+  await run([META, CHANNELS], 'readwrite', (tx) => {
+    tx.objectStore(META).put(meta)
+    tx.objectStore(CHANNELS).put(channels, meta.id)
+  })
+}
+
+export async function updateMeta(meta: PlaylistMeta): Promise<void> {
+  await run([META], 'readwrite', (tx) => {
+    tx.objectStore(META).put(meta)
+  })
+}
+
+export async function deletePlaylist(id: string): Promise<void> {
+  await run([META, CHANNELS], 'readwrite', (tx) => {
+    tx.objectStore(META).delete(id)
+    tx.objectStore(CHANNELS).delete(id)
+  })
+}

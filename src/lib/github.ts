@@ -55,20 +55,40 @@ export interface GithubStats {
   pushesLast7d: number
 }
 
-export class GithubError extends Error {}
+export type GithubErrorCode = 'network' | 'notFound' | 'rateLimit' | 'http'
+
+/** Carries a code instead of display text so the UI can translate it. */
+export class GithubError extends Error {
+  readonly code: GithubErrorCode
+  readonly status?: number
+  constructor(code: GithubErrorCode, status?: number) {
+    super(`GitHub error: ${code}${status ? ` (${status})` : ''}`)
+    this.code = code
+    this.status = status
+  }
+}
+
+export function githubErrorKey(error: unknown): { key: string; params?: Record<string, string | number> } {
+  if (error instanceof GithubError) {
+    if (error.code === 'notFound') return { key: 'github.err.notFound', params: { user: GITHUB_USERNAME } }
+    if (error.code === 'http') return { key: 'github.err.http', params: { status: error.status ?? 0 } }
+    return { key: error.code === 'rateLimit' ? 'github.err.rateLimit' : 'github.err.network' }
+  }
+  return { key: 'github.loadError' }
+}
 
 async function getJson<T>(path: string): Promise<T> {
   let res: Response
   try {
     res = await fetch(`${API}${path}`, { headers: HEADERS })
   } catch {
-    throw new GithubError('Could not reach GitHub. Check your connection.')
+    throw new GithubError('network')
   }
-  if (res.status === 404) throw new GithubError(`GitHub user "${GITHUB_USERNAME}" was not found.`)
+  if (res.status === 404) throw new GithubError('notFound')
   if (res.status === 403 || res.status === 429) {
-    throw new GithubError('GitHub rate limit reached for this network. Try again in a little while.')
+    throw new GithubError('rateLimit')
   }
-  if (!res.ok) throw new GithubError(`GitHub returned an error (${res.status}).`)
+  if (!res.ok) throw new GithubError('http', res.status)
   return (await res.json()) as T
 }
 

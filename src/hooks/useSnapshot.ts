@@ -3,18 +3,17 @@ import type { ArcHouseProfile } from '@/lib/arcHouse'
 import type { Snapshot } from '@/lib/assistant'
 import { useArcOnchain } from '@/hooks/useArcOnchain'
 import { useGithub } from '@/hooks/useGithub'
+import { githubErrorKey } from '@/lib/github'
+import { useI18n } from '@/i18n/useI18n'
 
 /** Combines live wallet, Arc House and GitHub data into one object for the assistant. */
 export function useSnapshot(profile: ArcHouseProfile | null): Snapshot {
   const onchain = useArcOnchain()
   const github = useGithub()
+  const { t } = useI18n()
 
   const usdc = onchain.usdcBalance?.toFixed(2)
-  const githubError = github.isError
-    ? github.error instanceof Error
-      ? github.error.message
-      : 'request failed'
-    : undefined
+  const githubError = github.isError ? t(githubErrorKey(github.error).key, githubErrorKey(github.error).params) : undefined
 
   return useMemo(
     () => ({

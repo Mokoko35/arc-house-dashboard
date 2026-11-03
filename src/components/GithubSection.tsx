@@ -1,42 +1,47 @@
 import { ExternalLink, GitFork, Github, RefreshCw, Star, Users } from 'lucide-react'
-import { GITHUB_USERNAME } from '@/lib/github'
+import { GITHUB_USERNAME, githubErrorKey } from '@/lib/github'
+import type { TFn } from '@/i18n/context'
+import { useI18n } from '@/i18n/useI18n'
 import { useGithub } from '@/hooks/useGithub'
 
-function pushedAgo(iso: string | null): string {
+function pushedAgo(iso: string | null, locale: string, t: TFn): string {
   if (!iso) return ''
   const days = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000)
-  if (days < 1) return 'today'
-  if (days === 1) return 'yesterday'
-  if (days < 30) return `${days}d ago`
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`
-  return `${Math.floor(days / 365)}y ago`
+  if (days < 1) return t('time.today')
+  if (days === 1) return t('time.yesterday')
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' })
+  if (days < 30) return rtf.format(-days, 'day')
+  if (days < 365) return rtf.format(-Math.floor(days / 30), 'month')
+  return rtf.format(-Math.floor(days / 365), 'year')
 }
 
 function Tile({ icon: Icon, label, value }: { icon: typeof Star; label: string; value: number | undefined }) {
+  const { locale } = useI18n()
   return (
-    <div className="inner p-4">
+    <div className="inner p-3 sm:p-4">
       <p className="label flex items-center gap-1.5">
         <Icon size={12} /> {label}
       </p>
       {value === undefined ? (
         <div className="mt-3 h-8 w-16 animate-pulse rounded-lg bg-white/10" />
       ) : (
-        <p className="display mt-2 text-3xl font-semibold tabular-nums">{value.toLocaleString('en-US')}</p>
+        <p className="display mt-2 text-2xl font-semibold tabular-nums sm:text-3xl">{value.toLocaleString(locale)}</p>
       )}
     </div>
   )
 }
 
 export function GithubSection() {
+  const { t, locale } = useI18n()
   const { data, isLoading, isFetching, isError, error, refetch } = useGithub()
 
   return (
-    <section className="card p-6 sm:p-8" aria-labelledby="github-title">
+    <section className="card p-5 sm:p-6 lg:p-8" aria-labelledby="github-title">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="label">Section 3</p>
+          <p className="label">{t('github.section')}</p>
           <h2 id="github-title" className="display mt-1 text-2xl font-semibold">
-            GitHub
+            {t('github.title')}
           </h2>
         </div>
         <div className="flex items-center gap-1">
@@ -52,7 +57,7 @@ export function GithubSection() {
           <button
             type="button"
             onClick={() => void refetch()}
-            aria-label="Refresh GitHub stats"
+            aria-label={t('github.refresh')}
             className="grid h-10 w-10 place-items-center rounded-full text-[var(--subtle)] transition hover:bg-white/10 hover:text-[var(--ink)]"
           >
             <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
@@ -62,9 +67,9 @@ export function GithubSection() {
 
       {isError ? (
         <div className="mt-6 rounded-2xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-4 py-4">
-          <p className="text-sm text-[var(--ink-2)]">{error instanceof Error ? error.message : 'Could not load GitHub stats.'}</p>
+          <p className="text-sm text-[var(--ink-2)]">{t(githubErrorKey(error).key, githubErrorKey(error).params)}</p>
           <button type="button" onClick={() => void refetch()} className="btn-ghost mt-3">
-            Try again
+            {t('github.tryAgain')}
           </button>
         </div>
       ) : (
@@ -79,22 +84,22 @@ export function GithubSection() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
-            <Tile icon={GitFork} label="Repos" value={data?.repos} />
-            <Tile icon={Star} label="Stars" value={data?.stars} />
-            <Tile icon={Users} label="Followers" value={data?.followers} />
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <Tile icon={GitFork} label={t('github.repos')} value={data?.repos} />
+            <Tile icon={Star} label={t('github.stars')} value={data?.stars} />
+            <Tile icon={Users} label={t('github.followers')} value={data?.followers} />
           </div>
 
           {data && (
             <div className="inner p-5">
               <div className="flex items-center justify-between">
-                <p className="label">Recently pushed</p>
+                <p className="label">{t('github.recent')}</p>
                 <span className="text-xs tabular-nums text-[var(--subtle)]">
-                  {data.eventsLast7d} public event{data.eventsLast7d === 1 ? '' : 's'} in 7 days
+                  {t('github.events', { n: data.eventsLast7d })}
                 </span>
               </div>
               {data.recentRepos.length === 0 ? (
-                <p className="mt-3 text-sm text-[var(--subtle)]">No public repositories yet.</p>
+                <p className="mt-3 text-sm text-[var(--subtle)]">{t('github.noRepos')}</p>
               ) : (
                 <ul className="mt-3 divide-y divide-white/10">
                   {data.recentRepos.map((r) => (
@@ -109,7 +114,7 @@ export function GithubSection() {
                           {r.name}
                         </a>
                         <p className="truncate text-xs text-[var(--subtle)]">
-                          {[r.language, pushedAgo(r.pushedAt)].filter(Boolean).join(' · ')}
+                          {[r.language, pushedAgo(r.pushedAt, locale, t)].filter(Boolean).join(' · ')}
                         </p>
                       </div>
                       <span className="inline-flex shrink-0 items-center gap-1 text-xs tabular-nums text-[var(--subtle)]">
@@ -121,7 +126,7 @@ export function GithubSection() {
               )}
             </div>
           )}
-          {isLoading && <p className="text-sm text-[var(--subtle)]">Loading from the GitHub API...</p>}
+          {isLoading && <p className="text-sm text-[var(--subtle)]">{t('github.loading')}</p>}
         </div>
       )}
     </section>

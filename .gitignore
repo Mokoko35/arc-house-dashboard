@@ -10,3 +10,4 @@ contracts/out
 contracts/cache
 *.log
 .DS_Store
+release

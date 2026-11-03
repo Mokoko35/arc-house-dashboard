@@ -4,6 +4,8 @@ import path from 'path'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig({
+  // Relative asset paths so the same build also works inside the Windows desktop app (file://).
+  base: './',
   plugins: [react(), nodePolyfills()],
   resolve: {
     alias: {
@@ -33,6 +35,17 @@ export default defineConfig({
       'vite-plugin-node-polyfills/shims/global',
       'vite-plugin-node-polyfills/shims/process',
     ],
+  },
+  build: {
+    rollupOptions: {
+      // Independent pages: IPTV player at "/", liquidation tracker, coin heatmap and Arc House dashboard as separate .html files.
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        liquidation: path.resolve(__dirname, 'liquidation.html'),
+        heatmap: path.resolve(__dirname, 'heatmap.html'),
+        dashboard: path.resolve(__dirname, 'dashboard.html'),
+      },
+    },
   },
   server: {
     allowedHosts: true,

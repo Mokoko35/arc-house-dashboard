@@ -19,6 +19,11 @@ import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConnectKitProvider } from 'connectkit'
 import { Toaster } from 'sonner'
+import { arcTestnet } from 'viem/chains'
+import type { ReactNode } from 'react'
+import { I18nProvider } from './i18n/I18nProvider'
+import { CONNECTKIT_LANGS } from './i18n/context'
+import { useI18n } from './i18n/useI18n'
 import { config } from './config'
 import App from './App'
 import { installShareSync } from './lib/share'
@@ -69,15 +74,35 @@ const StudioWatermark = () => (
 
 installShareSync()
 
+// ConnectKit's wallet dialog follows the dashboard language.
+function Wallets({ children }: { children: ReactNode }) {
+  const { lang } = useI18n()
+  return (
+    <ConnectKitProvider
+      theme="midnight"
+      options={{
+        language: CONNECTKIT_LANGS[lang],
+        walletConnectCTA: 'both',
+        initialChainId: arcTestnet.id,
+        hideNoWalletCTA: false,
+      }}
+    >
+      {children}
+    </ConnectKitProvider>
+  )
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>
-          <App />
-          <StudioWatermark />
-          <Toaster position="top-center" />
-        </ConnectKitProvider>
+        <I18nProvider>
+          <Wallets>
+            <App />
+            <StudioWatermark />
+            <Toaster position="top-center" />
+          </Wallets>
+        </I18nProvider>
       </QueryClientProvider>
     </WagmiProvider>
   </StrictMode>,
