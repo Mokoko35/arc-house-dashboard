@@ -1,8 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { ChevronRight, ListPlus, Search, SlidersHorizontal, X } from 'lucide-react'
 import { CategoryChips, CategorySidebar } from './CategoryRail'
-import { CountryFilter, type CountryCount } from './CountryFilter'
-import { NO_COUNTRY, countryOf } from './countries'
+import { flagOf } from './countries'
 import { ChannelCard, PosterCard } from './Cards'
 import { FAVORITES, KIND_LABEL, type Kind, categoriesOf, categoryCrumbs, groupOf } from './kinds'
 import type { CardSize } from './prefs'
@@ -69,7 +68,7 @@ function Breadcrumb({ kind, selected }: { kind: Kind; selected: string }) {
 }
 
 export function BrowsePage({ kind }: { kind: Kind }) {
-  const { lists, parts, visible, prefs, current, openItem, isFavorite, toggleFavorite, openManage, catalog, xtream, epg, updatePrefs } = useMedia()
+  const { lists, parts, visible, prefs, current, openItem, isFavorite, toggleFavorite, openManage, catalog, xtream, epg, activeCountries, setCountries } = useMedia()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const deferred = useDeferredValue(query)
@@ -79,27 +78,13 @@ export function BrowsePage({ kind }: { kind: Kind }) {
   const favoriteCount = useMemo(() => base.filter((c) => isFavorite(c)).length, [base, isFavorite])
   const selected = category === '' || category === FAVORITES || categories.some((c) => c.name === category) ? category : ''
 
-  // Country filter (Live TV only): the country comes from the channel name, such as "TR: TRT 1".
-  const countryById = useMemo(() => (kind === 'live' ? new Map(base.map((c) => [c.id, countryOf(c) ?? NO_COUNTRY])) : null), [base, kind])
-  const countryCounts = useMemo<CountryCount[]>(() => {
-    if (!countryById) return []
-    const counts = new Map<string, number>()
-    for (const code of countryById.values()) counts.set(code, (counts.get(code) ?? 0) + 1)
-    const list = [...counts.entries()].map(([code, count]) => ({ code, count }))
-    // Nothing to filter by unless at least one channel has a country.
-    if (!list.some((c) => c.code !== NO_COUNTRY)) return []
-    return list.sort((a, b) => (a.code === NO_COUNTRY ? 1 : b.code === NO_COUNTRY ? -1 : b.count - a.count || a.code.localeCompare(b.code)))
-  }, [countryById])
-  const activeCountries = useMemo(() => prefs.countries.filter((code) => countryCounts.some((c) => c.code === code)), [prefs.countries, countryCounts])
-
   const items = useMemo(() => {
     const q = deferred.trim().toLocaleLowerCase('tr')
     return base.filter((c) => {
       if (selected === FAVORITES ? !isFavorite(c) : selected !== '' && groupOf(c) !== selected) return false
-      if (activeCountries.length > 0 && !activeCountries.includes(countryById?.get(c.id) ?? NO_COUNTRY)) return false
       return !q || c.name.toLocaleLowerCase('tr').includes(q)
     })
-  }, [base, selected, deferred, isFavorite, activeCountries, countryById])
+  }, [base, selected, deferred, isFavorite])
 
   const poster = kind !== 'live'
   const gridClass = poster ? POSTER_GRID[prefs.cardSize] : LIVE_GRID[prefs.cardSize]
@@ -116,7 +101,18 @@ export function BrowsePage({ kind }: { kind: Kind }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <Breadcrumb kind={kind} selected={selected} />
-              <p className="mt-0.5 text-sm tabular-nums text-[var(--subtle)]">{items.length.toLocaleString('tr-TR')} öğe</p>
+              <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums text-[var(--subtle)]">
+                {items.length.toLocaleString('tr-TR')} öğe
+                {activeCountries.length > 0 && (
+                  <button type="button" onClick={() => setCountries([])} aria-label="Ülke filtresini temizle" className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2.5 text-xs text-accent">
+                    <span className="flag" aria-hidden="true">
+                      {activeCountries.slice(0, 4).map(flagOf).join(' ')}
+                    </span>
+                    {activeCountries.length > 4 ? `${activeCountries.length} ülke` : activeCountries.join(' ')}
+                    <X size={12} aria-hidden="true" />
+                  </button>
+                )}
+              </p>
             </div>
             {hasAny && (
               <div className="relative w-full sm:w-72">
@@ -135,8 +131,6 @@ export function BrowsePage({ kind }: { kind: Kind }) {
         <div className="pt-2 lg:px-8 lg:pb-16">
           {showRail && <CategoryChips {...rail} />}
 
-          {showRail && countryCounts.length > 0 && <CountryFilter countries={countryCounts} selected={activeCountries} onChange={(countries) => updatePrefs({ countries })} />}
-
           {kind === 'series' && catalog.error && xtream && (
             <p className="mb-4 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-[var(--ink-2)]">
               Dizi listesi portaldan alınamadı. {catalog.error} Listedeki bölümler tek tek gösteriliyor.
@@ -152,6 +146,15 @@ export function BrowsePage({ kind }: { kind: Kind }) {
             </div>
           ) : lists.playlists.length === 0 ? (
             <Empty icon="add">M3U adresi, portal girişi veya dosyayla ilk listeni ekle.</Empty>
+          ) : !hasAny && activeCountries.length > 0 ? (
+            <Empty icon="none">
+              Seçili ülkelerde bu türde içerik yok.
+              <div className="mt-4">
+                <button type="button" onClick={() => setCountries([])} className="btn-primary">
+                  Ülke filtresini temizle
+                </button>
+              </div>
+            </Empty>
           ) : !hasAny ? (
             <Empty icon="none">{EMPTY_HINT[kind]}</Empty>
           ) : base.length === 0 ? (
@@ -169,7 +172,7 @@ export function BrowsePage({ kind }: { kind: Kind }) {
             </Empty>
           ) : (
             <ProgressiveGrid
-              key={`${selected}|${deferred}|${prefs.cardSize}|${activeCountries.join(',')}`}
+              key={`${selected}|${deferred}|${prefs.cardSize}`}
               items={items}
               className={gridClass}
               getKey={(c) => c.id}

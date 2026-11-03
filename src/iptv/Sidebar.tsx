@@ -1,4 +1,5 @@
-import { Clapperboard, Home, Library, ListPlus, Menu, Settings, Tv } from 'lucide-react'
+import { Clapperboard, Globe, Home, Library, ListPlus, Menu, Settings, Tv } from 'lucide-react'
+import { Fragment } from 'react'
 import { hrefFor, type Page } from './router'
 import { useMedia } from './useMedia'
 
@@ -18,6 +19,40 @@ export function Brand() {
       </div>
       <span className="display text-xl font-semibold tracking-tight">IPTV</span>
     </div>
+  )
+}
+
+/** Opens the country filter. Shows how many countries are ticked. */
+export function CountryButton({ collapsed = false, compact = false }: { collapsed?: boolean; compact?: boolean }) {
+  const { countryOptions, activeCountries, countryPanel, setCountryPanel } = useMedia()
+  if (countryOptions.length === 0) return null
+  const n = activeCountries.length
+  const label = n > 0 ? `Ülke filtresi, ${n} seçili` : 'Ülke filtresi'
+  if (compact) {
+    return (
+      <button type="button" onClick={() => setCountryPanel(true)} aria-label={label} aria-haspopup="dialog" aria-expanded={countryPanel} className="relative grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-[var(--ink-2)] hover:bg-white/10">
+        <Globe size={20} aria-hidden="true" />
+        {n > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-[var(--accent-ink)]">{n}</span>}
+      </button>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setCountryPanel(true)}
+      aria-label={label}
+      aria-haspopup="dialog"
+      aria-expanded={countryPanel}
+      title={collapsed ? label : undefined}
+      className={`relative flex min-h-11 w-full items-center rounded-xl text-sm font-medium transition ${collapsed ? 'justify-center' : 'gap-3 px-3'} ${
+        n > 0 || countryPanel ? 'bg-accent/15 text-accent' : 'text-[var(--subtle)] hover:bg-white/5 hover:text-[var(--ink)]'
+      }`}
+    >
+      <Globe size={20} aria-hidden="true" />
+      {!collapsed && <span className="flex-1 text-left">Ülke Filtresi</span>}
+      {!collapsed && n > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-[var(--accent-ink)]">{n}</span>}
+      {collapsed && n > 0 && <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-bold text-[var(--accent-ink)]">{n}</span>}
+    </button>
   )
 }
 
@@ -52,8 +87,9 @@ export function Sidebar() {
             const on = route.page === page
             const count = counts[page]
             return (
+              <Fragment key={page}>
+                {page === 'settings' && <CountryButton collapsed={collapsed} />}
               <a
-                key={page}
                 href={hrefFor(page)}
                 aria-current={on ? 'page' : undefined}
                 aria-label={collapsed ? label : undefined}
@@ -67,6 +103,7 @@ export function Sidebar() {
                 {!collapsed && <span className="flex-1">{label}</span>}
                 {!collapsed && count !== undefined && count > 0 && <span className="text-xs tabular-nums opacity-60">{count.toLocaleString('tr-TR')}</span>}
               </a>
+              </Fragment>
             )
           })}
         </nav>

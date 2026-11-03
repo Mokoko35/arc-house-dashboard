@@ -9,6 +9,7 @@ import { usePlaylists } from './usePlaylists'
 import { useCatalog } from './useCatalog'
 import { useEpg } from './useEpg'
 import { isAdult } from './adult'
+import { type CountryCount, NO_COUNTRY, countryOf } from './countries'
 import { applyTheme } from './themes'
 import { loginFromPlaylistUrl, loginFromStreamUrl, vodIdOf } from './xtreamApi'
 import type { XtreamLogin } from './types'
@@ -27,6 +28,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState<{ playlistId: string | null; channel: Channel } | null>(null)
   const [detail, setDetail] = useState<Channel | null>(null)
   const [adding, setAdding] = useState(false)
+  const [countryPanel, setCountryPanel] = useState(false)
   const [managing, setManaging] = useState<Kind | null>(null)
 
   const base = useMemo(() => partition(channels), [channels])
@@ -45,7 +47,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const catalog = useCatalog(xtream, active?.id ?? null)
   const epg = useEpg(xtream, active?.id ?? null, prefs)
 
-  const parts = useMemo<Partition>(() => {
+  const unfiltered = useMemo<Partition>(() => {
     const art = catalog.art
     const movie = base.movie.map((c) => {
       const id = vodIdOf(c.url)
@@ -59,6 +61,34 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     const clean = (list: Channel[]) => list.filter((c) => !isAdult(c))
     return { live: clean(all.live), movie: clean(all.movie), series: clean(all.series) }
   }, [base, catalog, prefs.adultFilter])
+
+  // Every channel's country, and how many channels each country has. Counted before the country filter is applied,
+  // so the list of countries does not shrink when you tick one.
+  const { countryOptions, countryOf: codeOf } = useMemo(() => {
+    const codes = new WeakMap<Channel, string>()
+    const counts = new Map<string, number>()
+    for (const list of [unfiltered.live, unfiltered.movie, unfiltered.series]) {
+      for (const c of list) {
+        const code = countryOf(c) ?? NO_COUNTRY
+        codes.set(c, code)
+        counts.set(code, (counts.get(code) ?? 0) + 1)
+      }
+    }
+    let options: CountryCount[] = [...counts.entries()].map(([code, count]) => ({ code, count }))
+    // Nothing to filter by unless at least one channel has a country.
+    if (!options.some((o) => o.code !== NO_COUNTRY)) options = []
+    options.sort((a, b) => (a.code === NO_COUNTRY ? 1 : b.code === NO_COUNTRY ? -1 : b.count - a.count || a.code.localeCompare(b.code)))
+    return { countryOptions: options, countryOf: (c: Channel) => codes.get(c) ?? NO_COUNTRY }
+  }, [unfiltered])
+
+  const activeCountries = useMemo(() => prefs.countries.filter((code) => countryOptions.some((o) => o.code === code)), [prefs.countries, countryOptions])
+
+  // The country filter works on the whole app, so counts, categories and search all follow it.
+  const parts = useMemo<Partition>(() => {
+    if (activeCountries.length === 0) return unfiltered
+    const keep = (list: Channel[]) => list.filter((c) => activeCountries.includes(codeOf(c)))
+    return { live: keep(unfiltered.live), movie: keep(unfiltered.movie), series: keep(unfiltered.series) }
+  }, [unfiltered, activeCountries, codeOf])
 
   useEffect(() => {
     applyTheme(prefs.theme)
@@ -159,6 +189,11 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     play,
     prefs,
     updatePrefs,
+    countryOptions,
+    activeCountries,
+    setCountries: (countries) => updatePrefs({ countries }),
+    countryPanel,
+    setCountryPanel,
     route,
     adding,
     openAdd: () => setAdding(true),

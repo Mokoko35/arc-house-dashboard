@@ -8,7 +8,8 @@ import { PlayerOverlay } from './iptv/PlayerOverlay'
 import { Splash } from './iptv/Splash'
 import { MediaProvider } from './iptv/MediaProvider'
 import { SettingsPage } from './iptv/SettingsPage'
-import { Brand, Sidebar } from './iptv/Sidebar'
+import { Brand, CountryButton, Sidebar } from './iptv/Sidebar'
+import { CountryPanel } from './iptv/CountryPanel'
 import { useMedia } from './iptv/useMedia'
 
 function Shell() {
@@ -21,6 +22,7 @@ function Shell() {
       <div className={prefs.sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-60'}>
         <header className="flex items-center justify-between px-4 pt-4 lg:hidden">
           <Brand />
+          <CountryButton compact />
         </header>
 
         <main className="mx-auto w-full px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
@@ -36,6 +38,8 @@ function Shell() {
           {route.page === 'settings' && <SettingsPage />}
         </main>
       </div>
+
+      <CountryPanel />
 
       {adding && <AddPlaylistDialog busy={lists.busy} progress={lists.progress} error={lists.error} onClose={closeAdd} onAdd={lists.add} />}
       <ManageCategoriesModal />

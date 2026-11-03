@@ -8,6 +8,7 @@ import type { PlaylistsState } from './usePlaylists'
 import type { Catalog } from './useCatalog'
 import type { Epg } from './useEpg'
 import type { XtreamLogin } from './types'
+import type { CountryCount } from './countries'
 
 export type PlayerMode = 'closed' | 'modal' | 'mini'
 
@@ -41,6 +42,13 @@ export interface Media {
   expandPlayer: () => void
   /** Stops playback and removes the player. */
   stopPlayer: () => void
+  /** Countries found in the list, with their channel counts. Empty when no channel has a country. */
+  countryOptions: CountryCount[]
+  /** Countries ticked in the country filter. Empty means every country is shown. */
+  activeCountries: string[]
+  setCountries: (codes: string[]) => void
+  countryPanel: boolean
+  setCountryPanel: (open: boolean) => void
   prefs: Prefs
   updatePrefs: (patch: Partial<Prefs>) => void
   route: ReturnType<typeof useRoute>
