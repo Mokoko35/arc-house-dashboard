@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { deletePlaylist, getChannels, listPlaylists, savePlaylist } from './db'
 import { channelsFromText, channelsFromUrl, loadErrorText } from './load'
 import { hashId } from './m3u'
-import { loadLast } from './storage'
+import { loadActiveId, saveActiveId } from './storage'
 import type { Channel, PlaylistMeta, XtreamLogin } from './types'
 import { xtreamPlaylistUrl } from './xtream'
 
@@ -37,6 +37,7 @@ export function usePlaylists(): PlaylistsState {
 
   const activate = useCallback(async (id: string) => {
     setActiveId(id)
+    saveActiveId(id)
     setChannels(await getChannels(id))
   }, [])
 
@@ -47,8 +48,8 @@ export function usePlaylists(): PlaylistsState {
         const list = await listPlaylists()
         if (cancelled) return
         setPlaylists(list)
-        const last = loadLast()
-        const first = list.find((p) => p.id === last?.playlistId) ?? list[0]
+        const saved = loadActiveId()
+        const first = list.find((p) => p.id === saved) ?? list[0]
         if (first) {
           const ch = await getChannels(first.id)
           if (cancelled) return

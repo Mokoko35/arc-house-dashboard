@@ -2,7 +2,6 @@ import { type ReactNode, useMemo } from 'react'
 import { ChevronRight, ListPlus, Play, Tv } from 'lucide-react'
 import { ChannelCard, PosterCard } from './Cards'
 import { groupOf, kindOf } from './kinds'
-import { PlayerPanel } from './PlayerPanel'
 import { hrefFor, type Page } from './router'
 import type { Channel } from './types'
 import { useMedia } from './useMedia'
@@ -60,7 +59,7 @@ function Hero({ channel }: { channel: Channel }) {
 }
 
 export function HomePage(): ReactNode {
-  const { lists, parts, visible, favorites, isFavorite, current, openAdd } = useMedia()
+  const { lists, parts, visible, favorites, isFavorite, openAdd } = useMedia()
 
   // `favorites` is read so the row refreshes when a favorite changes.
   const favs = useMemo(
@@ -90,7 +89,7 @@ export function HomePage(): ReactNode {
 
   return (
     <div className="space-y-8">
-      {current ? <PlayerPanel /> : featured && <Hero channel={featured} />}
+      {featured && <Hero channel={featured} />}
       <Row title="Favorilerin" items={favs} />
       <Row title="Canlı TV" items={visible.live.slice(0, 24)} href="live" />
       <Row title="Filmler" items={visible.movie.slice(0, 24)} href="movies" />

@@ -1,9 +1,9 @@
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
-import { MediaContext, type Media } from './context'
+import { MediaContext, type Media, type PlayerMode } from './context'
 import { type Kind, type Partition, categoriesOf, groupOf, kindOf, partition } from './kinds'
 import { DEFAULT_PREFS, type HiddenMap, type Prefs, hiddenKey, loadHidden, loadPrefs, saveHidden, savePrefs } from './prefs'
 import { useRoute } from './router'
-import { type Favorites, favKey, loadFavorites, loadLast, saveFavorites, saveLast } from './storage'
+import { type Favorites, favKey, loadFavorites, saveFavorites } from './storage'
 import type { Channel } from './types'
 import { usePlaylists } from './usePlaylists'
 import { useCatalog } from './useCatalog'
@@ -20,7 +20,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
   const [hidden, setHidden] = useState<HiddenMap>(loadHidden)
   const [favorites, setFavorites] = useState<Favorites>(loadFavorites)
-  const [selectedId, setSelectedId] = useState<string | null>(() => (loadPrefs().startWithLast ? (loadLast()?.channelId ?? null) : null))
+  const [playerMode, setPlayerMode] = useState<PlayerMode>('closed')
   const [playing, setPlaying] = useState<{ playlistId: string | null; channel: Channel } | null>(null)
   const [detail, setDetail] = useState<Channel | null>(null)
   const [adding, setAdding] = useState(false)
@@ -98,8 +98,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const play = useCallback(
     (c: Channel) => {
       setPlaying({ playlistId: active?.id ?? null, channel: c })
-      setSelectedId(c.id)
-      if (active) saveLast({ playlistId: active.id, channelId: c.id })
+      setPlayerMode('modal')
     },
     [active],
   )
@@ -136,7 +135,14 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     detail,
     openItem,
     closeDetail: () => setDetail(null),
-    current: (playing && playing.playlistId === (active?.id ?? null) ? playing.channel : null) ?? (active && channels.find((c) => c.id === selectedId)) ?? null,
+    current: playing && playing.playlistId === (active?.id ?? null) ? playing.channel : null,
+    playerMode,
+    minimizePlayer: () => setPlayerMode((m) => (m === 'modal' ? 'mini' : m)),
+    expandPlayer: () => setPlayerMode((m) => (m === 'mini' ? 'modal' : m)),
+    stopPlayer: () => {
+      setPlaying(null)
+      setPlayerMode('closed')
+    },
     play,
     prefs,
     updatePrefs,

@@ -4,6 +4,7 @@ import { BrowsePage } from './iptv/BrowsePage'
 import { DetailDialog } from './iptv/DetailDialog'
 import { HomePage } from './iptv/HomePage'
 import { ManageCategoriesModal } from './iptv/ManageCategoriesModal'
+import { PlayerOverlay } from './iptv/PlayerOverlay'
 import { MediaProvider } from './iptv/MediaProvider'
 import { SettingsPage } from './iptv/SettingsPage'
 import { Brand, Sidebar } from './iptv/Sidebar'
@@ -21,7 +22,7 @@ function Shell() {
           <Brand />
         </header>
 
-        <main className="mx-auto w-full max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
+        <main className="mx-auto w-full max-w-[1920px] px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
           {lists.error && !adding && (
             <p role="alert" className="mb-4 rounded-2xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--ink-2)]">
               {lists.error}
@@ -46,6 +47,7 @@ function Shell() {
       {adding && <AddPlaylistDialog busy={lists.busy} error={lists.error} onClose={closeAdd} onAdd={lists.add} />}
       <ManageCategoriesModal />
       <DetailDialog />
+      <PlayerOverlay />
     </div>
   )
 }

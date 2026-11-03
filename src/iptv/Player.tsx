@@ -14,7 +14,7 @@ function engineFor(url: string): Engine {
 /** An https page cannot load http streams. Desktop (file://) and plain http pages can. */
 const mixedContent = (url: string) => window.location.protocol === 'https:' && url.startsWith('http://')
 
-function PlayerCore({ channel, autoplay }: { channel: Channel; autoplay: boolean }) {
+function PlayerCore({ channel, autoplay, className }: { channel: Channel; autoplay: boolean; className: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -106,7 +106,7 @@ function PlayerCore({ channel, autoplay }: { channel: Channel; autoplay: boolean
     : error
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
+    <div className={`relative aspect-video w-full overflow-hidden bg-black ${className}`}>
       <video ref={videoRef} controls playsInline className="h-full w-full" />
       {loading && !message && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -125,7 +125,7 @@ function PlayerCore({ channel, autoplay }: { channel: Channel; autoplay: boolean
   )
 }
 
-export function Player({ channel, autoplay = true }: { channel: Channel | null; autoplay?: boolean }) {
+export function Player({ channel, autoplay = true, className = 'rounded-2xl border border-white/10' }: { channel: Channel | null; autoplay?: boolean; className?: string }) {
   if (!channel) {
     return (
       <div className="grid aspect-video w-full place-items-center rounded-2xl border border-dashed border-white/15 bg-black/40 p-6 text-center">
@@ -137,5 +137,5 @@ export function Player({ channel, autoplay = true }: { channel: Channel | null; 
     )
   }
   // The key remounts the player for each channel, which resets loading and error state.
-  return <PlayerCore key={channel.id} channel={channel} autoplay={autoplay} />
+  return <PlayerCore key={channel.id} channel={channel} autoplay={autoplay} className={className} />
 }

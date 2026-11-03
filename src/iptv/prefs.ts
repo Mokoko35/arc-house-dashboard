@@ -4,7 +4,6 @@ export type CardSize = 'sm' | 'md' | 'lg'
 export type EpgRefresh = 'off' | '6' | '12' | '24'
 
 export interface Prefs {
-  startWithLast: boolean
   showLogos: boolean
   cardSize: CardSize
   autoplay: boolean
@@ -15,7 +14,6 @@ export interface Prefs {
 }
 
 export const DEFAULT_PREFS: Prefs = {
-  startWithLast: true,
   showLogos: true,
   cardSize: 'md',
   autoplay: true,
@@ -36,7 +34,6 @@ export function loadPrefs(): Prefs {
     if (!isRecord(raw)) return DEFAULT_PREFS
     const d = DEFAULT_PREFS
     return {
-      startWithLast: typeof raw.startWithLast === 'boolean' ? raw.startWithLast : d.startWithLast,
       showLogos: typeof raw.showLogos === 'boolean' ? raw.showLogos : d.showLogos,
       cardSize: raw.cardSize === 'sm' || raw.cardSize === 'md' || raw.cardSize === 'lg' ? raw.cardSize : d.cardSize,
       autoplay: typeof raw.autoplay === 'boolean' ? raw.autoplay : d.autoplay,

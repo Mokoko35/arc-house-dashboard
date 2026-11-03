@@ -8,6 +8,8 @@ import type { PlaylistsState } from './usePlaylists'
 import type { Catalog } from './useCatalog'
 import type { XtreamLogin } from './types'
 
+export type PlayerMode = 'closed' | 'modal' | 'mini'
+
 export interface Media {
   lists: PlaylistsState
   /** Portal login for the active list, when it is an Xtream-style portal. Used for film and series details. */
@@ -29,7 +31,14 @@ export interface Media {
   isFavorite: (channel: Channel) => boolean
   toggleFavorite: (channel: Channel) => void
   current: Channel | null
+  /** Starts a channel, film or episode in the large player window. */
   play: (channel: Channel) => void
+  playerMode: PlayerMode
+  /** Shrinks the player to the corner so you can keep browsing while it plays. */
+  minimizePlayer: () => void
+  expandPlayer: () => void
+  /** Stops playback and removes the player. */
+  stopPlayer: () => void
   prefs: Prefs
   updatePrefs: (patch: Partial<Prefs>) => void
   route: ReturnType<typeof useRoute>

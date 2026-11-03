@@ -39,15 +39,15 @@ export function CategoryRail({ categories, total, selected, onSelect, onManage }
         </button>
       </div>
 
-      <aside className="hidden w-60 shrink-0 lg:block" aria-label="Kategoriler">
-        <div className="sticky top-4 rounded-2xl border border-white/10 bg-white/[0.04] p-2">
+      <aside className="hidden w-64 shrink-0 lg:block" aria-label="Kategoriler">
+        <div className="sticky top-4 flex max-h-[calc(100dvh-2rem)] flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-2">
           <div className="flex items-center justify-between px-3 pb-2 pt-1">
             <h3 className="label">Kategoriler</h3>
             <button type="button" onClick={onManage} aria-label="Kategorileri yönet" title="Kategorileri yönet" className="grid h-9 w-9 place-items-center rounded-full text-[var(--subtle)] hover:bg-white/10 hover:text-[var(--accent)]">
               <SlidersHorizontal size={16} />
             </button>
           </div>
-          <ul className="max-h-[60dvh] space-y-0.5 overflow-y-auto" role="tablist" aria-orientation="vertical">
+          <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto" role="tablist" aria-orientation="vertical">
             {all.map((c) => (
               <li key={c.name || 'all'}>
                 <button type="button" role="tab" aria-selected={selected === c.name} onClick={() => onSelect(c.name)} className={`${base} w-full text-left ${selected === c.name ? on : off}`}>

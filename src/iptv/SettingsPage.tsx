@@ -34,9 +34,6 @@ function General() {
         <Row label="Logoları ve posterleri göster" hint="Kapatırsan kartlarda yalnızca baş harfler görünür.">
           <Toggle label="Logoları ve posterleri göster" checked={prefs.showLogos} onChange={(showLogos) => updatePrefs({ showLogos })} />
         </Row>
-        <Row label="Açılışta son izlenen kanalı seç" hint="Uygulamayı açtığında son izlediğin içerik oynatıcıda hazır olur.">
-          <Toggle label="Açılışta son izlenen kanalı seç" checked={prefs.startWithLast} onChange={(startWithLast) => updatePrefs({ startWithLast })} />
-        </Row>
       </Section>
     </div>
   )

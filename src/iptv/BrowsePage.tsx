@@ -4,19 +4,19 @@ import { CategoryRail } from './CategoryRail'
 import { ChannelCard, PosterCard } from './Cards'
 import { KIND_LABEL, type Kind, categoriesOf, groupOf } from './kinds'
 import type { CardSize } from './prefs'
-import { PlayerPanel } from './PlayerPanel'
 import { ProgressiveGrid } from './ProgressiveGrid'
 import { useMedia } from './useMedia'
 
+// Columns fill whatever width is left next to the category list, so the grid always uses the full space.
 const LIVE_GRID: Record<CardSize, string> = {
-  sm: 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-  md: 'grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4',
-  lg: 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3',
+  sm: 'grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3',
+  md: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4',
+  lg: 'grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-4',
 }
 const POSTER_GRID: Record<CardSize, string> = {
-  sm: 'grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6',
-  md: 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-  lg: 'grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4',
+  sm: 'grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3',
+  md: 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4',
+  lg: 'grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-5',
 }
 
 const EMPTY_HINT: Record<Kind, string> = {
@@ -62,13 +62,10 @@ export function BrowsePage({ kind }: { kind: Kind }) {
   }, [base, activeCategory, deferred, favOnly, isFavorite])
 
   const poster = kind !== 'live'
-  const showPlayer = kind === 'live' || current !== null
   const hasAny = parts[kind].length > 0
 
   return (
     <div className="space-y-8">
-      {showPlayer && <PlayerPanel />}
-
       <section aria-labelledby={`${kind}-title`}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
