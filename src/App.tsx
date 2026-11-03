@@ -1,23 +1,24 @@
-import { Loader2 } from 'lucide-react'
 import { AddPlaylistDialog } from './iptv/AddPlaylistDialog'
+import { ActivityPill } from './iptv/ActivityPill'
 import { BrowsePage } from './iptv/BrowsePage'
 import { DetailDialog } from './iptv/DetailDialog'
 import { HomePage } from './iptv/HomePage'
 import { ManageCategoriesModal } from './iptv/ManageCategoriesModal'
 import { PlayerOverlay } from './iptv/PlayerOverlay'
+import { Splash } from './iptv/Splash'
 import { MediaProvider } from './iptv/MediaProvider'
 import { SettingsPage } from './iptv/SettingsPage'
 import { Brand, Sidebar } from './iptv/Sidebar'
 import { useMedia } from './iptv/useMedia'
 
 function Shell() {
-  const { route, lists, adding, closeAdd } = useMedia()
+  const { route, lists, adding, closeAdd, prefs } = useMedia()
 
   return (
     <div className="theme-media">
       <Sidebar />
 
-      <div className="lg:pl-60">
+      <div className={prefs.sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-60'}>
         <header className="flex items-center justify-between px-4 pt-4 lg:hidden">
           <Brand />
         </header>
@@ -28,26 +29,20 @@ function Shell() {
               {lists.error}
             </p>
           )}
-          {lists.starting ? (
-            <div className="grid place-items-center py-24 text-[var(--subtle)]">
-              <Loader2 className="animate-spin" aria-label="Yükleniyor" />
-            </div>
-          ) : (
-            <>
-              {route.page === 'home' && <HomePage />}
-              {route.page === 'live' && <BrowsePage kind="live" />}
-              {route.page === 'movies' && <BrowsePage kind="movie" />}
-              {route.page === 'series' && <BrowsePage kind="series" />}
-              {route.page === 'settings' && <SettingsPage />}
-            </>
-          )}
+          {route.page === 'home' && <HomePage />}
+          {route.page === 'live' && <BrowsePage kind="live" />}
+          {route.page === 'movies' && <BrowsePage kind="movie" />}
+          {route.page === 'series' && <BrowsePage kind="series" />}
+          {route.page === 'settings' && <SettingsPage />}
         </main>
       </div>
 
-      {adding && <AddPlaylistDialog busy={lists.busy} error={lists.error} onClose={closeAdd} onAdd={lists.add} />}
+      {adding && <AddPlaylistDialog busy={lists.busy} progress={lists.progress} error={lists.error} onClose={closeAdd} onAdd={lists.add} />}
       <ManageCategoriesModal />
       <DetailDialog />
       <PlayerOverlay />
+      <ActivityPill />
+      <Splash />
     </div>
   )
 }

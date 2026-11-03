@@ -3,6 +3,8 @@ import { Heart, Play, Star } from 'lucide-react'
 import { hashId } from './m3u'
 import { groupOf } from './kinds'
 import type { Channel } from './types'
+import { clock } from './epgFormat'
+import type { NowNext } from './xmltv'
 
 interface CardProps {
   channel: Channel
@@ -13,6 +15,8 @@ interface CardProps {
   onFavorite: (channel: Channel) => void
   /** Fixed width, for horizontal rows. */
   className?: string
+  /** What is on now and next, for live channels. */
+  epg?: NowNext | null
 }
 
 const initials = (name: string) =>
@@ -67,7 +71,7 @@ function Artwork({ channel, showLogo, fit }: { channel: Channel; showLogo: boole
 }
 
 /** Live TV card: wide tile with the channel logo. */
-export function ChannelCard({ channel, active, favorite, showLogo, onPlay, onFavorite, className = '' }: CardProps) {
+export function ChannelCard({ channel, active, favorite, showLogo, onPlay, onFavorite, className = '', epg }: CardProps) {
   return (
     <article className={`group relative ${className}`}>
       <button
@@ -90,7 +94,27 @@ export function ChannelCard({ channel, active, favorite, showLogo, onPlay, onFav
         </span>
         <span className="block p-3">
           <span className="block truncate text-sm font-medium text-[var(--ink-2)]">{channel.name}</span>
-          <span className="block truncate text-xs text-[var(--subtle)]">{groupOf(channel)}</span>
+          {epg?.now || epg?.next ? (
+            <>
+              {epg.now && (
+                <>
+                  <span className="mt-1 block truncate text-xs text-[var(--ink-2)]">
+                    <span className="font-semibold text-[var(--accent)]">Şimdi</span> {clock(epg.now.start)} {epg.now.title}
+                  </span>
+                  <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                    <span className="block h-full rounded-full bg-[var(--accent)]" style={{ width: `${Math.round(epg.progress * 100)}%` }} />
+                  </span>
+                </>
+              )}
+              {epg.next && (
+                <span className="mt-1 block truncate text-[11px] text-[var(--subtle)]">
+                  <span className="font-semibold">Sonra</span> {clock(epg.next.start)} {epg.next.title}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="block truncate text-xs text-[var(--subtle)]">{groupOf(channel)}</span>
+          )}
         </span>
       </button>
       <FavoriteButton favorite={favorite} name={channel.name} onClick={() => onFavorite(channel)} />

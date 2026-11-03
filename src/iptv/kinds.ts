@@ -10,13 +10,16 @@ export const KIND_BADGE: Record<Kind, string> = { live: 'CANLI', movie: 'FİLM',
 export const UNCATEGORIZED = 'Kategorisiz'
 
 /** Xtream portals put films under /movie/ and series under /series/. Plain M3U lists fall back to the file type. */
-export function kindOf(channel: Channel): Kind {
-  if (channel.seriesId) return 'series'
-  const url = channel.url.toLowerCase()
+export function kindOfUrl(rawUrl: string): Kind {
+  const url = rawUrl.toLowerCase()
   if (url.includes('/movie/')) return 'movie'
   if (url.includes('/series/')) return 'series'
   if (/\.(mp4|mkv|avi)(\?|$)/.test(url)) return 'movie'
   return 'live'
+}
+
+export function kindOf(channel: Channel): Kind {
+  return channel.seriesId ? 'series' : kindOfUrl(channel.url)
 }
 
 export const groupOf = (channel: Channel): string => channel.group || UNCATEGORIZED

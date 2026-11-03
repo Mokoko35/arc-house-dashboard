@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { Heart, Maximize2, Minimize2, Power, X } from 'lucide-react'
 import { KIND_BADGE, groupOf, kindOf } from './kinds'
+import { EpgPanel } from './EpgPanel'
 import { Player } from './Player'
 import { useMedia } from './useMedia'
 
 const DESCRIPTION = {
-  live: 'Program rehberi (EPG) bağlandığında şimdi ve sonra yayınlanacak programlar burada görünecek.',
   movie: 'Film ayrıntıları için kartına tıklayıp özet, oyuncu ve puan bilgisine bakabilirsin.',
   series: 'Dizi ayrıntıları için kartına tıklayıp sezon ve bölümleri görebilirsin.',
 } as const
@@ -15,7 +15,7 @@ const DESCRIPTION = {
  * minimizing keeps the stream playing instead of restarting it.
  */
 export function PlayerOverlay() {
-  const { current, playerMode, minimizePlayer, expandPlayer, stopPlayer, isFavorite, toggleFavorite, lists, prefs } = useMedia()
+  const { current, playerMode, minimizePlayer, expandPlayer, stopPlayer, isFavorite, toggleFavorite, lists, prefs, epg } = useMedia()
   const modal = playerMode === 'modal'
 
   useEffect(() => {
@@ -75,7 +75,11 @@ export function PlayerOverlay() {
               </div>
               <h2 className="display mt-2 text-balance text-2xl font-semibold sm:text-3xl">{current.name}</h2>
               {current.subtitle && <p className="mt-1 text-sm font-medium text-[var(--accent)]">{current.subtitle}</p>}
-              <p className="mt-1.5 line-clamp-3 max-w-3xl text-pretty text-sm text-[var(--subtle)]">{current.description ?? DESCRIPTION[kind]}</p>
+              {kind === 'live' ? (
+                <EpgPanel channel={current} epg={epg} />
+              ) : (
+                <p className="mt-1.5 line-clamp-3 max-w-3xl text-pretty text-sm text-[var(--subtle)]">{current.description ?? DESCRIPTION[kind]}</p>
+              )}
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" onClick={() => toggleFavorite(current)} aria-pressed={fav} className={`btn-ghost ${fav ? '!border-[var(--accent)] !text-[var(--accent)]' : ''}`}>

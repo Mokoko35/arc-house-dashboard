@@ -23,6 +23,9 @@ An IPTV player (browser and Windows desktop app). Users add M3U / Xtream lists a
 - `src/iptv/` - the app: routing (`router.ts`, hash based), state (`MediaProvider.tsx`, `context.ts`, `useMedia.ts`), pages, cards, dialogs
 - `src/iptv/PlayerOverlay.tsx` - the one player element; it is a large modal or a docked mini player (`playerMode`), so minimizing never restarts the stream. Pages must not render their own player.
 - `src/iptv/m3u.ts`, `xtream.ts`, `xtreamApi.ts` - playlist parsing and Xtream `player_api.php` calls (cached)
+- `src/iptv/xmltv.ts`, `useEpg.ts`, `EpgPanel.tsx` - program guide: streaming XMLTV reader (keeps only programmes around now), cached per list in IndexedDB, Now/Next lookup
+- `src/iptv/load.ts`, `LoadProgressView.tsx`, `ActivityPill.tsx`, `Skeletons.tsx` - streamed list download with live counts, and loading UI
+- `src/iptv/Splash.tsx` - launch splash
 - `src/iptv/db.ts`, `storage.ts`, `prefs.ts` - persistence
 - `src/index.css` - tokens and the `.theme-media` orange-on-dark theme
 - `src/tracing.ts`, `src/console-capture.ts`, `src/lib/share.ts` - Arc Studio platform helpers; leave as they are

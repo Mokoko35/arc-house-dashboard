@@ -25,7 +25,7 @@ export function parseM3U(raw: string): Channel[] {
   const lines = raw.replace(/^\uFEFF/, '').split(/\r?\n/)
   const channels: Channel[] = []
   const seen = new Map<string, number>()
-  let pending: { name: string; logo?: string; group?: string } | null = null
+  let pending: { name: string; logo?: string; group?: string; tvgId?: string } | null = null
   let extGroup: string | undefined
 
   for (const rawLine of lines) {
@@ -40,6 +40,7 @@ export function parseM3U(raw: string): Channel[] {
         name: title || attrs['tvg-name'] || 'Adsız kanal',
         logo: attrs['tvg-logo'] || undefined,
         group: attrs['group-title'] || extGroup || undefined,
+        tvgId: attrs['tvg-id'] || undefined,
       }
     } else if (line.startsWith('#EXTGRP:')) {
       extGroup = line.slice(8).trim() || undefined
@@ -56,6 +57,7 @@ export function parseM3U(raw: string): Channel[] {
         url: line,
         logo: 'logo' in info ? info.logo : undefined,
         group: 'group' in info ? info.group : undefined,
+        tvgId: 'tvgId' in info ? info.tvgId : undefined,
       })
       pending = null
     }

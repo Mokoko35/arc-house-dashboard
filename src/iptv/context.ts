@@ -6,6 +6,7 @@ import type { Favorites } from './storage'
 import type { Channel } from './types'
 import type { PlaylistsState } from './usePlaylists'
 import type { Catalog } from './useCatalog'
+import type { Epg } from './useEpg'
 import type { XtreamLogin } from './types'
 
 export type PlayerMode = 'closed' | 'modal' | 'mini'
@@ -15,6 +16,7 @@ export interface Media {
   /** Portal login for the active list, when it is an Xtream-style portal. Used for film and series details. */
   xtream: XtreamLogin | null
   catalog: Catalog
+  epg: Epg
   /** Film or series whose detail window is open. */
   detail: Channel | null
   /** Opens the detail window for films and portal series, and plays everything else straight away. */

@@ -193,3 +193,93 @@ a:focus-visible {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Scrollbars: thin, dark and rounded, everywhere. */
+html {
+  color-scheme: dark;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 138, 51, 0.55);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox has no ::-webkit-scrollbar. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+}
+
+/* Splash screen */
+@keyframes splash-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 26, 0.45), 0 0 40px rgba(255, 122, 26, 0.25);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 18px rgba(255, 122, 26, 0), 0 0 70px rgba(255, 122, 26, 0.45);
+    transform: scale(1.06);
+  }
+}
+@keyframes splash-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+@keyframes splash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.splash-logo {
+  animation: splash-glow 1.8s ease-in-out infinite;
+}
+.splash-bar {
+  animation: splash-bar 1.2s ease-in-out infinite;
+}
+.splash-rise {
+  animation: splash-rise 0.6s ease-out both;
+}
+
+/* Loading shimmer for skeleton cards */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}

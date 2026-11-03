@@ -1,5 +1,7 @@
-import { type FormEvent, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { FileUp, Link2, Loader2, Server, X, ClipboardPaste } from 'lucide-react'
+import { LoadProgressView } from './LoadProgressView'
+import type { LoadProgress } from './load'
 import type { AddInput } from './usePlaylists'
 
 type Tab = 'url' | 'xtream' | 'file' | 'text'
@@ -13,12 +15,13 @@ const TABS: { id: Tab; label: string; icon: typeof Link2 }[] = [
 
 interface Props {
   busy: boolean
+  progress: LoadProgress | null
   error: string | null
   onClose: () => void
   onAdd: (input: AddInput) => Promise<boolean>
 }
 
-export function AddPlaylistDialog({ busy, error, onClose, onAdd }: Props) {
+export function AddPlaylistDialog({ busy, progress, error, onClose, onAdd }: Props) {
   const [tab, setTab] = useState<Tab>('url')
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
@@ -29,6 +32,10 @@ export function AddPlaylistDialog({ busy, error, onClose, onAdd }: Props) {
   const [fileName, setFileName] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [submitted, setSubmitted] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => () => clearTimeout(closeTimer.current), [])
 
   const readFile = async (file: File) => {
     setFileName(file.name)
@@ -50,7 +57,13 @@ export function AddPlaylistDialog({ busy, error, onClose, onAdd }: Props) {
       if (!text.trim()) return setFormError(tab === 'file' ? 'Önce bir .m3u veya .m3u8 dosyası seç.' : 'M3U içeriğini yapıştır.')
       input = { kind: tab, name: name || (tab === 'file' ? fileName : 'Yapıştırılan liste'), text }
     }
-    if (await onAdd(input)) onClose()
+    setSubmitted(true)
+    if (await onAdd(input)) {
+      // Leave the finished counts on screen for a moment before closing.
+      closeTimer.current = setTimeout(onClose, 1400)
+    } else {
+      setSubmitted(false)
+    }
   }
 
   const shownError = formError ?? error
@@ -72,6 +85,10 @@ export function AddPlaylistDialog({ busy, error, onClose, onAdd }: Props) {
           </button>
         </div>
 
+        {submitted && progress ? (
+          <LoadProgressView progress={progress} onBackground={onClose} />
+        ) : (
+          <>
         <div role="tablist" aria-label="Ekleme yöntemi" className="mt-4 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-black/20 p-1">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
@@ -162,6 +179,8 @@ export function AddPlaylistDialog({ busy, error, onClose, onAdd }: Props) {
           {busy ? 'Liste yükleniyor...' : 'Listeyi ekle'}
         </button>
         <p className="mt-3 text-center text-xs text-[var(--subtle)]">Listeler yalnızca bu cihazda saklanır. Uygulama içerik sağlamaz.</p>
+          </>
+        )}
       </form>
     </div>
   )

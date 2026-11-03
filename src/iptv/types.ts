@@ -5,6 +5,8 @@ export interface Channel {
   url: string
   logo?: string
   group?: string
+  /** EPG channel id from the list (tvg-id), used to find the program guide for a channel. */
+  tvgId?: string
   /** Set for series from an Xtream portal: the series id used by get_series_info. */
   seriesId?: string
   /** Synopsis, shown under the player. Filled in from the portal's metadata. */

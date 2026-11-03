@@ -11,7 +11,12 @@ Built with [Arc Studio](https://studio.arc.io)
 - **Player window and mini player:** clicking a channel, movie or episode opens a large player window. Close it and the stream keeps playing in a small floating player in the corner while you keep browsing.
 - **Real movie and series details** from Xtream portals: poster, synopsis, cast, director, rating, trailer link, and seasons with episodes.
 - **Category manager:** show or hide categories per section.
-- **Settings:** list management, card size, logos, autoplay, and EPG address (saved for a future release).
+- **Program guide (EPG):** the Live TV cards and the player window show what is on now and next, with a progress bar. It reads the portal's `xmltv.php` guide, or any XMLTV address you set in Settings (`.xml` and `.xml.gz`).
+- **Clear loading feedback:** adding a list shows a live progress screen with the number of channels, movies and series found as it downloads; background loading shows a status pill, and grids show placeholders while they fill.
+- **Collapsible menu:** a hamburger button shrinks the left menu to icons so the grids get more room.
+- **Launch screen:** a short animated splash with the logo when the app opens.
+- **Dark, thin scrollbars** that match the theme.
+- **Settings:** list management, card size, logos, autoplay and program guide options.
 - **Playback** of HLS (`.m3u8`) and MPEG-TS (`.ts`) streams, plus common video files.
 - **Private by design:** lists, favorites and settings stay on your device.
 
@@ -54,6 +59,7 @@ None.
 
 ## Notes
 
+- The program guide is matched to channels by the list's `tvg-id`, or by channel name when there is none. Lists added before this feature have no `tvg-id` saved, so update them once. Large guides can take a few minutes to download; only the programmes around the current time are kept on the device.
 - Movie and series details need a list added as a portal login or as a `get.php` address. Plain M3U lists play straight from the grid.
 - Portal responses are cached on your device for up to 12 hours (details for up to 7 days).
 - Lists and posters are stored in the browser's IndexedDB and local storage.

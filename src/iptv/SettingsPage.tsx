@@ -1,9 +1,10 @@
-import { SlidersHorizontal } from 'lucide-react'
+import { RefreshCw, SlidersHorizontal } from 'lucide-react'
+import { dateTime, megabytes } from './epgFormat'
 import { PlaylistManager } from './PlaylistManager'
 import { KIND_LABEL, KINDS, categoriesOf } from './kinds'
 import type { CardSize, EpgRefresh } from './prefs'
 import { hrefFor, type SettingsTab } from './router'
-import { Row, Section, Segmented, SoonBadge, Toggle } from './SettingsControls'
+import { Row, Section, Segmented, Toggle } from './SettingsControls'
 import { useMedia } from './useMedia'
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -67,26 +68,40 @@ function Playback() {
 }
 
 function Epg() {
-  const { prefs, updatePrefs } = useMedia()
+  const { prefs, updatePrefs, epg } = useMedia()
+  const shownUrl = epg.url.replace(/(password=)[^&]*/i, '$1***')
+  const status =
+    epg.status === 'loading'
+      ? `Rehber indiriliyor${epg.bytes > 0 ? ` · ${megabytes(epg.bytes)}` : '...'}`
+      : epg.status === 'ready'
+        ? `${epg.channelCount.toLocaleString('tr-TR')} kanal için program var${epg.fetchedAt ? ` · son güncelleme ${dateTime(epg.fetchedAt)}` : ''}`
+        : epg.status === 'error'
+          ? (epg.error ?? 'Rehber alınamadı.')
+          : epg.url
+            ? 'Henüz indirilmedi.'
+            : 'Bu liste bir portal değil. Rehber için bir XMLTV adresi gir.'
+
   return (
     <div className="space-y-5">
-      <p className="flex items-center gap-2 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[var(--ink-2)]">
-        <SoonBadge /> Program rehberi (EPG) gösterimi sonraki adımda eklenecek. Adresi şimdiden kaydedebilirsin.
-      </p>
-      <Section title="Program rehberi (EPG)">
-        <Row label="XMLTV adresi" hint="Genellikle .xml veya .xml.gz ile biten adres. Portal listelerinde sağlayıcı verir." htmlFor="epg-url">
+      <Section title="Program rehberi (EPG)" description="Canlı TV kartlarında ve oynatıcı penceresinde Şimdi ve Sonra programlarını gösterir.">
+        <Row label="Durum" hint={epg.status === 'ready' && epg.error ? epg.error : undefined}>
+          <p aria-live="polite" className={`max-w-xs text-right text-sm tabular-nums ${epg.status === 'error' ? 'text-[var(--danger)]' : 'text-[var(--ink-2)]'}`}>
+            {status}
+          </p>
+        </Row>
+        <Row label="XMLTV adresi" hint="Boş bırakırsan portalın kendi adresi (xmltv.php) kullanılır. Genellikle .xml veya .xml.gz ile biten adres." htmlFor="epg-url">
           <input
             id="epg-url"
             value={prefs.epgUrl}
             onChange={(e) => updatePrefs({ epgUrl: e.target.value })}
-            placeholder="http://sunucu.com/epg.xml"
+            placeholder={shownUrl || 'http://sunucu.com/epg.xml'}
             inputMode="url"
             autoComplete="off"
             spellCheck={false}
             className="field w-full sm:w-80"
           />
         </Row>
-        <Row label="Otomatik güncelleme" hint="Rehber ne sıklıkla yenilensin.">
+        <Row label="Otomatik güncelleme" hint="Rehber ne sıklıkla yenilensin. Kapalıysa yalnızca elle güncellenir.">
           <Segmented<EpgRefresh>
             label="Otomatik güncelleme"
             value={prefs.epgRefresh}
@@ -99,12 +114,13 @@ function Epg() {
             ]}
           />
         </Row>
-        <Row label="Şimdi güncelle" soon>
-          <button type="button" disabled className="btn-ghost">
-            Rehberi indir
+        <Row label="Şimdi güncelle" hint="Büyük rehberler birkaç dakika sürebilir. İlerleme üstte görünür.">
+          <button type="button" onClick={epg.refresh} disabled={!epg.url || epg.status === 'loading'} className="btn-primary">
+            <RefreshCw size={16} className={epg.status === 'loading' ? 'animate-spin' : ''} aria-hidden="true" /> Rehberi indir
           </button>
         </Row>
       </Section>
+      <p className="text-xs text-[var(--subtle)]">Kanalların rehberle eşleşmesi için listedeki tvg-id kullanılır; yoksa kanal adı eşleştirilir. Eski eklenen listelerde tvg-id yoksa listeyi güncelle.</p>
     </div>
   )
 }

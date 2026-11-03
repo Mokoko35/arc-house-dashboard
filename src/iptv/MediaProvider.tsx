@@ -7,6 +7,7 @@ import { type Favorites, favKey, loadFavorites, saveFavorites } from './storage'
 import type { Channel } from './types'
 import { usePlaylists } from './usePlaylists'
 import { useCatalog } from './useCatalog'
+import { useEpg } from './useEpg'
 import { loginFromPlaylistUrl, loginFromStreamUrl, vodIdOf } from './xtreamApi'
 import type { XtreamLogin } from './types'
 
@@ -40,6 +41,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     )
   }, [active, base])
   const catalog = useCatalog(xtream, active?.id ?? null)
+  const epg = useEpg(xtream, active?.id ?? null, prefs)
 
   const parts = useMemo<Partition>(() => {
     const art = catalog.art
@@ -132,6 +134,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     toggleFavorite,
     xtream,
     catalog,
+    epg,
     detail,
     openItem,
     closeDetail: () => setDetail(null),
