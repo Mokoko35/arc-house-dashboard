@@ -1,13 +1,13 @@
 import { Clapperboard, Globe, Home, Library, ListPlus, Menu, Settings, Tv } from 'lucide-react'
-import { Fragment } from 'react'
 import { hrefFor, type Page } from './router'
 import { useMedia } from './useMedia'
 
-const ITEMS: { page: Page; label: string; icon: typeof Home }[] = [
+const ITEMS: { page: Page; label: string; short?: string; icon: typeof Home }[] = [
   { page: 'home', label: 'Ana Sayfa', icon: Home },
   { page: 'live', label: 'Canlı TV', icon: Tv },
   { page: 'movies', label: 'Filmler', icon: Clapperboard },
   { page: 'series', label: 'Diziler', icon: Library },
+  { page: 'countries', label: 'Ülke Filtresi', short: 'Ülkeler', icon: Globe },
   { page: 'settings', label: 'Ayarlar', icon: Settings },
 ]
 
@@ -22,44 +22,10 @@ export function Brand() {
   )
 }
 
-/** Opens the country filter. Shows how many countries are ticked. */
-export function CountryButton({ collapsed = false, compact = false }: { collapsed?: boolean; compact?: boolean }) {
-  const { countryOptions, activeCountries, countryPanel, setCountryPanel } = useMedia()
-  if (countryOptions.length === 0) return null
-  const n = activeCountries.length
-  const label = n > 0 ? `Ülke filtresi, ${n} seçili` : 'Ülke filtresi'
-  if (compact) {
-    return (
-      <button type="button" onClick={() => setCountryPanel(true)} aria-label={label} aria-haspopup="dialog" aria-expanded={countryPanel} className="relative grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-[var(--ink-2)] hover:bg-white/10">
-        <Globe size={20} aria-hidden="true" />
-        {n > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-[var(--accent-ink)]">{n}</span>}
-      </button>
-    )
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => setCountryPanel(true)}
-      aria-label={label}
-      aria-haspopup="dialog"
-      aria-expanded={countryPanel}
-      title={collapsed ? label : undefined}
-      className={`relative flex min-h-11 w-full items-center rounded-xl text-sm font-medium transition ${collapsed ? 'justify-center' : 'gap-3 px-3'} ${
-        n > 0 || countryPanel ? 'bg-accent/15 text-accent' : 'text-[var(--subtle)] hover:bg-white/5 hover:text-[var(--ink)]'
-      }`}
-    >
-      <Globe size={20} aria-hidden="true" />
-      {!collapsed && <span className="flex-1 text-left">Ülke Filtresi</span>}
-      {!collapsed && n > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-[var(--accent-ink)]">{n}</span>}
-      {collapsed && n > 0 && <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-bold text-[var(--accent-ink)]">{n}</span>}
-    </button>
-  )
-}
-
 export function Sidebar() {
-  const { route, parts, lists, openAdd, prefs, updatePrefs } = useMedia()
+  const { route, parts, lists, openAdd, prefs, updatePrefs, activeCountries } = useMedia()
   const collapsed = prefs.sidebarCollapsed
-  const counts: Partial<Record<Page, number>> = { live: parts.live.length, movies: parts.movie.length, series: parts.series.length }
+  const counts: Partial<Record<Page, number>> = { live: parts.live.length, movies: parts.movie.length, series: parts.series.length, countries: activeCountries.length }
   const toggle = () => updatePrefs({ sidebarCollapsed: !collapsed })
 
   return (
@@ -87,9 +53,8 @@ export function Sidebar() {
             const on = route.page === page
             const count = counts[page]
             return (
-              <Fragment key={page}>
-                {page === 'settings' && <CountryButton collapsed={collapsed} />}
               <a
+                key={page}
                 href={hrefFor(page)}
                 aria-current={on ? 'page' : undefined}
                 aria-label={collapsed ? label : undefined}
@@ -101,9 +66,18 @@ export function Sidebar() {
                 {on && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-accent" />}
                 <Icon size={20} aria-hidden="true" />
                 {!collapsed && <span className="flex-1">{label}</span>}
-                {!collapsed && count !== undefined && count > 0 && <span className="text-xs tabular-nums opacity-60">{count.toLocaleString('tr-TR')}</span>}
+                {!collapsed && count !== undefined && count > 0 && page === 'countries' && (
+                  <span aria-label={`${count} ülke seçili`} className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-[var(--accent-ink)]">
+                    {count}
+                  </span>
+                )}
+                {!collapsed && count !== undefined && count > 0 && page !== 'countries' && <span className="text-xs tabular-nums opacity-60">{count.toLocaleString('tr-TR')}</span>}
+                {collapsed && page === 'countries' && count !== undefined && count > 0 && (
+                  <span aria-hidden="true" className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-bold text-[var(--accent-ink)]">
+                    {count}
+                  </span>
+                )}
               </a>
-              </Fragment>
             )
           })}
         </nav>
@@ -128,8 +102,8 @@ export function Sidebar() {
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/10 bg-nav/95 backdrop-blur lg:hidden" aria-label="Ana menü">
-        {ITEMS.map(({ page, label, icon: Icon }) => {
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-white/10 bg-nav/95 backdrop-blur lg:hidden" aria-label="Ana menü">
+        {ITEMS.map(({ page, label, short, icon: Icon }) => {
           const on = route.page === page
           return (
             <a
@@ -139,7 +113,7 @@ export function Sidebar() {
               className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${on ? 'text-accent' : 'text-[var(--subtle)]'}`}
             >
               <Icon size={20} aria-hidden="true" />
-              {label}
+              {short ?? label}
             </a>
           )
         })}

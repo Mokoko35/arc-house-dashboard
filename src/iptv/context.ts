@@ -47,8 +47,6 @@ export interface Media {
   /** Countries ticked in the country filter. Empty means every country is shown. */
   activeCountries: string[]
   setCountries: (codes: string[]) => void
-  countryPanel: boolean
-  setCountryPanel: (open: boolean) => void
   prefs: Prefs
   updatePrefs: (patch: Partial<Prefs>) => void
   route: ReturnType<typeof useRoute>

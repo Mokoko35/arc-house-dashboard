@@ -28,7 +28,6 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState<{ playlistId: string | null; channel: Channel } | null>(null)
   const [detail, setDetail] = useState<Channel | null>(null)
   const [adding, setAdding] = useState(false)
-  const [countryPanel, setCountryPanel] = useState(false)
   const [managing, setManaging] = useState<Kind | null>(null)
 
   const base = useMemo(() => partition(channels), [channels])
@@ -192,8 +191,6 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     countryOptions,
     activeCountries,
     setCountries: (countries) => updatePrefs({ countries }),
-    countryPanel,
-    setCountryPanel,
     route,
     adding,
     openAdd: () => setAdding(true),
