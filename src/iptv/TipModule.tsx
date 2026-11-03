@@ -61,7 +61,7 @@ function TipInner({ provider, listName, onClose }: { provider: `0x${string}`; li
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/60 backdrop-blur-sm sm:place-items-center sm:p-4" onClick={onClose} role="presentation">
-      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="USDC bahşiş" className="w-full max-w-md rounded-t-3xl border border-white/15 bg-[#0f2036] p-5 shadow-2xl sm:rounded-3xl sm:p-6">
+      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="USDC bahşiş" className="w-full max-w-md rounded-t-3xl border border-white/15 bg-[#14151a] p-5 shadow-2xl sm:rounded-3xl sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <TokenUSDC variant="branded" size={32} />

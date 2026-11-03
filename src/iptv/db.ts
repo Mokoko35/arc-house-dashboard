@@ -4,14 +4,16 @@ import type { Channel, PlaylistMeta } from './types'
 const DB_NAME = 'iptv-player'
 const META = 'playlists'
 const CHANNELS = 'channels'
+const CACHE = 'cache'
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
+    const req = indexedDB.open(DB_NAME, 2)
     req.onupgradeneeded = () => {
       const db = req.result
       if (!db.objectStoreNames.contains(META)) db.createObjectStore(META, { keyPath: 'id' })
       if (!db.objectStoreNames.contains(CHANNELS)) db.createObjectStore(CHANNELS)
+      if (!db.objectStoreNames.contains(CACHE)) db.createObjectStore(CACHE)
     }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error ?? new Error('IndexedDB açılamadı'))
@@ -59,9 +61,39 @@ export async function updateMeta(meta: PlaylistMeta): Promise<void> {
   })
 }
 
+export interface CacheEntry<T> {
+  savedAt: number
+  value: T
+}
+
+export async function cacheGet<T>(key: string): Promise<CacheEntry<T> | undefined> {
+  return run<CacheEntry<T>>([CACHE], 'readonly', (tx) => tx.objectStore(CACHE).get(key))
+}
+
+export async function cachePut<T>(key: string, value: T): Promise<void> {
+  await run([CACHE], 'readwrite', (tx) => {
+    tx.objectStore(CACHE).put({ savedAt: Date.now(), value } satisfies CacheEntry<T>, key)
+  })
+}
+
+export async function cacheDeletePrefix(prefix: string): Promise<void> {
+  await run([CACHE], 'readwrite', (tx) => {
+    const store = tx.objectStore(CACHE)
+    const req = store.openKeyCursor(IDBKeyRange.bound(prefix, `${prefix}\uffff`))
+    req.onsuccess = () => {
+      const cursor = req.result
+      if (cursor) {
+        store.delete(cursor.primaryKey)
+        cursor.continue()
+      }
+    }
+  })
+}
+
 export async function deletePlaylist(id: string): Promise<void> {
   await run([META, CHANNELS], 'readwrite', (tx) => {
     tx.objectStore(META).delete(id)
     tx.objectStore(CHANNELS).delete(id)
   })
+  await cacheDeletePrefix(`${id}:`).catch(() => undefined)
 }

@@ -63,7 +63,7 @@ export function AddPlaylistDialog({ busy, error, onClose, onAdd }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Liste ekle"
-        className="max-h-dvh w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/15 bg-[#0f2036] p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className="max-h-dvh w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/15 bg-[#14151a] p-5 shadow-2xl sm:rounded-3xl sm:p-6"
       >
         <div className="flex items-center justify-between">
           <h2 className="display text-2xl font-semibold">Liste ekle</h2>
@@ -83,7 +83,7 @@ export function AddPlaylistDialog({ busy, error, onClose, onAdd }: Props) {
                 setTab(id)
                 setFormError(null)
               }}
-              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[11px] font-medium transition sm:text-xs ${tab === id ? 'bg-[var(--accent)] text-[#0d1b2f]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[11px] font-medium transition sm:text-xs ${tab === id ? 'bg-[var(--accent)] text-[var(--accent-ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}
             >
               <Icon size={15} aria-hidden="true" />
               {label}

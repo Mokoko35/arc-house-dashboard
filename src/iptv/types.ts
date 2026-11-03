@@ -5,6 +5,14 @@ export interface Channel {
   url: string
   logo?: string
   group?: string
+  /** Set for series from an Xtream portal: the series id used by get_series_info. */
+  seriesId?: string
+  /** Synopsis, shown under the player. Filled in from the portal's metadata. */
+  description?: string
+  /** Short line under the title, for example "Sezon 1 · Bölüm 2". */
+  subtitle?: string
+  /** Score out of 10, when the portal provides one. */
+  rating?: number
 }
 
 export type SourceKind = 'url' | 'xtream' | 'file' | 'text'

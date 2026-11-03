@@ -1,0 +1,152 @@
+import { useState } from 'react'
+import { Heart, Play, Star } from 'lucide-react'
+import { hashId } from './m3u'
+import { groupOf } from './kinds'
+import type { Channel } from './types'
+
+interface CardProps {
+  channel: Channel
+  active: boolean
+  favorite: boolean
+  showLogo: boolean
+  onPlay: (channel: Channel) => void
+  onFavorite: (channel: Channel) => void
+  /** Fixed width, for horizontal rows. */
+  className?: string
+}
+
+const initials = (name: string) =>
+  name
+    .replace(/[^\p{L}\p{N} ]/gu, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toLocaleUpperCase('tr'))
+    .join('') || '?'
+
+/** A stable color per title, so placeholder posters differ from each other. */
+function hueOf(name: string): number {
+  return parseInt(hashId(name).slice(0, 4), 36) % 360
+}
+
+function FavoriteButton({ favorite, name, onClick }: { favorite: boolean; name: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={favorite}
+      aria-label={favorite ? `${name} favorilerden çıkar` : `${name} favorilere ekle`}
+      className={`absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-black/55 backdrop-blur transition ${
+        favorite ? 'text-[var(--accent)]' : 'text-white/80 opacity-100 hover:text-white lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100'
+      }`}
+    >
+      <Heart size={16} fill={favorite ? 'currentColor' : 'none'} />
+    </button>
+  )
+}
+
+function Artwork({ channel, showLogo, fit }: { channel: Channel; showLogo: boolean; fit: 'contain' | 'cover' }) {
+  const [failed, setFailed] = useState(false)
+  const hue = hueOf(channel.name)
+  const src = showLogo && !failed ? channel.logo : undefined
+  return (
+    <div className="absolute inset-0 grid place-items-center" style={{ background: `linear-gradient(145deg, hsl(${hue} 45% 22%), hsl(${(hue + 40) % 360} 40% 10%))` }}>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className={fit === 'cover' ? 'h-full w-full object-cover' : 'h-3/5 w-3/5 object-contain drop-shadow-lg'}
+        />
+      ) : (
+        <span className="display text-4xl font-semibold text-white/70">{initials(channel.name)}</span>
+      )}
+    </div>
+  )
+}
+
+/** Live TV card: wide tile with the channel logo. */
+export function ChannelCard({ channel, active, favorite, showLogo, onPlay, onFavorite, className = '' }: CardProps) {
+  return (
+    <article className={`group relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => onPlay(channel)}
+        aria-label={`${channel.name} kanalını oynat`}
+        aria-current={active || undefined}
+        className={`block w-full overflow-hidden rounded-2xl border bg-white/[0.04] text-left transition duration-200 hover:-translate-y-0.5 hover:border-white/25 ${
+          active ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/40' : 'border-white/10'
+        }`}
+      >
+        <span className="relative block aspect-video overflow-hidden">
+          <Artwork channel={channel} showLogo={showLogo} fit="contain" />
+          <span className="absolute inset-0 grid place-items-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-ink)]">
+              <Play size={20} fill="currentColor" aria-hidden="true" />
+            </span>
+          </span>
+          {active && <span className="absolute left-2 top-2 rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
+        </span>
+        <span className="block p-3">
+          <span className="block truncate text-sm font-medium text-[var(--ink-2)]">{channel.name}</span>
+          <span className="block truncate text-xs text-[var(--subtle)]">{groupOf(channel)}</span>
+        </span>
+      </button>
+      <FavoriteButton favorite={favorite} name={channel.name} onClick={() => onFavorite(channel)} />
+    </article>
+  )
+}
+
+/** Movie and series card: tall poster. Uses the list's logo as the poster when there is one, otherwise a placeholder. */
+export function PosterCard({ channel, active, favorite, showLogo, onPlay, onFavorite, className = '' }: CardProps) {
+  return (
+    <article className={`group relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => onPlay(channel)}
+        aria-label={`${channel.name} ayrıntılarını aç`}
+        aria-current={active || undefined}
+        className="block w-full text-left"
+      >
+        <span
+          className={`relative block aspect-[2/3] overflow-hidden rounded-2xl border transition duration-200 group-hover:-translate-y-0.5 group-hover:border-white/25 ${
+            active ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/40' : 'border-white/10'
+          }`}
+        >
+          <Artwork channel={channel} showLogo={showLogo} fit="cover" />
+          <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
+          <span className="absolute inset-0 grid place-items-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-ink)]">
+              <Play size={22} fill="currentColor" aria-hidden="true" />
+            </span>
+          </span>
+          {active && <span className="absolute bottom-2 left-2 rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">İZLENİYOR</span>}
+          {channel.rating !== undefined && !active && (
+            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-amber-300">
+              <Star size={11} fill="currentColor" aria-hidden="true" /> {channel.rating.toFixed(1)}
+            </span>
+          )}
+        </span>
+        <span className="mt-2 block truncate text-sm font-medium text-[var(--ink-2)]">{channel.name}</span>
+        <span className="block truncate text-xs text-[var(--subtle)]">{groupOf(channel)}</span>
+      </button>
+      <FavoriteButton favorite={favorite} name={channel.name} onClick={() => onFavorite(channel)} />
+    </article>
+  )
+}
+
+/** Poster image with the same colored placeholder the cards use. Pass `key={src}` so a new image gets a fresh try. */
+export function PosterArt({ name, src, className = '' }: { name: string; src?: string; className?: string }) {
+  const [failed, setFailed] = useState(false)
+  const hue = hueOf(name)
+  return (
+    <div className={`relative grid place-items-center overflow-hidden ${className}`} style={{ background: `linear-gradient(145deg, hsl(${hue} 45% 22%), hsl(${(hue + 40) % 360} 40% 10%))` }}>
+      {src && !failed ? (
+        <img src={src} alt="" onError={() => setFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        <span className="display text-4xl font-semibold text-white/70">{initials(name)}</span>
+      )}
+    </div>
+  )
+}

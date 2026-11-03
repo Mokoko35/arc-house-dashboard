@@ -6,7 +6,7 @@ Built with [Arc Studio](https://studio.arc.io)
 
 ## Pages
 
-- **IPTV Player** (`/`): the player.
+- **IPTV Player** (`/`): a media-center style player with a sidebar (Home, Live TV, Movies, Series, Settings), card grids, a category manager and a settings page (General, Playback, EPG, Category Management). Movies and series open a detail window with the real poster, synopsis, cast, director, rating, trailer link and, for series, seasons and episodes. This uses an Xtream portal's `player_api.php` (`get_vod_info`, `get_vod_streams`, `get_series`, `get_series_info`), so it needs a list added as a portal login or a `get.php` address; plain M3U lists play straight from the grid. Portal responses are cached on the device for up to 12 hours (details for up to 7 days). EPG, buffer size and hardware decoding settings are saved but not applied yet.
 - **Liquidation Levels** (`/liquidation.html`): manually entered BTC and ETH liquidation clusters tracked against the live CoinGecko price.
 - **Coin Heatmap** (`/heatmap.html`): top 20 coins by market cap, colored by 24h change.
 - **Arc House Dashboard** (`/dashboard.html`): wallet, Arc House profile and GitHub dashboard (described below).

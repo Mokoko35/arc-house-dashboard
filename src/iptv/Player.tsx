@@ -7,14 +7,14 @@ type Engine = 'hls' | 'ts' | 'native'
 function engineFor(url: string): Engine {
   const path = url.split('?')[0]?.toLowerCase() ?? ''
   if (path.endsWith('.m3u8') || path.includes('.m3u8')) return 'hls'
-  if (/\.(mp4|webm|m4v|mov|ogv|ogg|mp3|aac)$/.test(path)) return 'native'
+  if (/\.(mp4|mkv|webm|m4v|mov|ogv|ogg|mp3|aac)$/.test(path)) return 'native'
   return 'ts' // ".ts" and extension-less live URLs (typical for Xtream portals)
 }
 
 /** An https page cannot load http streams. Desktop (file://) and plain http pages can. */
 const mixedContent = (url: string) => window.location.protocol === 'https:' && url.startsWith('http://')
 
-function PlayerCore({ channel }: { channel: Channel }) {
+function PlayerCore({ channel, autoplay }: { channel: Channel; autoplay: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -83,7 +83,7 @@ function PlayerCore({ channel }: { channel: Channel }) {
         } else {
           video.src = channel.url
         }
-        await video.play().catch(() => undefined) // Autoplay can be refused; the user can press play.
+        if (autoplay) await video.play().catch(() => undefined) // Autoplay can be refused; the user can press play.
       } catch {
         fail('Oynatıcı başlatılamadı.')
       }
@@ -99,7 +99,7 @@ function PlayerCore({ channel }: { channel: Channel }) {
       video.removeAttribute('src')
       video.load()
     }
-  }, [channel.url, blocked])
+  }, [channel.url, blocked, autoplay])
 
   const message = blocked
     ? 'Bu yayın http:// ile başlıyor. https sayfalarda tarayıcı bunu engeller. Windows masaüstü uygulamasında veya http:// ile açılan sayfada oynar.'
@@ -107,7 +107,7 @@ function PlayerCore({ channel }: { channel: Channel }) {
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
-      <video ref={videoRef} controls autoPlay playsInline className="h-full w-full" />
+      <video ref={videoRef} controls playsInline className="h-full w-full" />
       {loading && !message && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
           <Loader2 className="animate-spin text-white/70" size={36} aria-label="Yükleniyor" />
@@ -125,10 +125,10 @@ function PlayerCore({ channel }: { channel: Channel }) {
   )
 }
 
-export function Player({ channel }: { channel: Channel | null }) {
+export function Player({ channel, autoplay = true }: { channel: Channel | null; autoplay?: boolean }) {
   if (!channel) {
     return (
-      <div className="grid aspect-video w-full place-items-center rounded-2xl border border-dashed border-white/15 bg-black/30 p-6 text-center">
+      <div className="grid aspect-video w-full place-items-center rounded-2xl border border-dashed border-white/15 bg-black/40 p-6 text-center">
         <div>
           <Tv className="mx-auto text-[var(--subtle)]" size={34} aria-hidden="true" />
           <p className="mt-3 text-sm text-[var(--subtle)]">İzlemek için listeden bir kanal seç.</p>
@@ -137,5 +137,5 @@ export function Player({ channel }: { channel: Channel | null }) {
     )
   }
   // The key remounts the player for each channel, which resets loading and error state.
-  return <PlayerCore key={channel.id} channel={channel} />
+  return <PlayerCore key={channel.id} channel={channel} autoplay={autoplay} />
 }
