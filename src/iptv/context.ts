@@ -44,6 +44,8 @@ export interface Media {
   stopPlayer: () => void
   /** Countries found in the list, with their channel counts. Empty when no channel has a country. */
   countryOptions: CountryCount[]
+  /** Channels with no recognized country ("Diğer"). They stay visible whatever country is picked. */
+  otherCount: number
   /** Countries ticked in the country filter. Empty means every country is shown. */
   activeCountries: string[]
   setCountries: (codes: string[]) => void

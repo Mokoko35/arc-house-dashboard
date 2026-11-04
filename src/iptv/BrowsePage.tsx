@@ -1,7 +1,8 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { ChevronRight, ListPlus, Search, SlidersHorizontal, X } from 'lucide-react'
 import { CategoryChips, CategorySidebar } from './CategoryRail'
-import { flagOf } from './countries'
+import { CountrySelect } from './CountrySelect'
+import { countryOfGroup, flagOf } from './countries'
 import { ChannelCard, PosterCard } from './Cards'
 import { FAVORITES, KIND_LABEL, type Kind, categoriesOf, categoryCrumbs, groupOf } from './kinds'
 import type { CardSize } from './prefs'
@@ -90,7 +91,12 @@ export function BrowsePage({ kind }: { kind: Kind }) {
   const gridClass = poster ? POSTER_GRID[prefs.cardSize] : LIVE_GRID[prefs.cardSize]
   const hasAny = parts[kind].length > 0
   const showRail = !lists.starting && lists.playlists.length > 0 && hasAny && base.length > 0
-  const rail = { categories, total: base.length, favoriteCount, selected, onSelect: setCategory, onManage: () => openManage(kind) }
+  // While a country is picked, categories without a country go under "Diğer" instead of disappearing.
+  const otherNames = useMemo(
+    () => (activeCountries.length > 0 ? new Set(categories.filter((c) => countryOfGroup(c.name) === null).map((c) => c.name)) : undefined),
+    [activeCountries, categories],
+  )
+  const rail = { categories, total: base.length, favoriteCount, selected, onSelect: setCategory, onManage: () => openManage(kind), otherNames }
 
   return (
     <div className="lg:-mx-8 lg:-mb-16 lg:-mt-8 lg:flex lg:min-h-dvh">
@@ -129,6 +135,11 @@ export function BrowsePage({ kind }: { kind: Kind }) {
         </header>
 
         <div className="pt-2 lg:px-8 lg:pb-16">
+          {showRail && (
+            <div className="mb-3 lg:hidden">
+              <CountrySelect />
+            </div>
+          )}
           {showRail && <CategoryChips {...rail} />}
 
           {kind === 'series' && catalog.error && xtream && (

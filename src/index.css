@@ -98,6 +98,26 @@ body {
   line-height: 1;
 }
 
+.select-solid {
+  appearance: none;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 2.25rem 0 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 0.75rem;
+  /* Solid, never transparent, so the page behind it cannot show through. */
+  background-color: rgb(var(--elev-rgb, 20 21 26));
+  color: var(--ink);
+  color-scheme: dark;
+  font-size: 0.875rem;
+  font-family: 'Twemoji Country Flags', 'DM Sans', sans-serif;
+  cursor: pointer;
+}
+.select-solid option {
+  background-color: rgb(var(--elev-rgb, 20 21 26));
+  color: rgb(235 238 245);
+}
+
 .display {
   font-family: 'Space Grotesk', sans-serif;
   letter-spacing: -0.03em;

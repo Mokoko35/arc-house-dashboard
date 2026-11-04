@@ -9,7 +9,6 @@ import { Splash } from './iptv/Splash'
 import { MediaProvider } from './iptv/MediaProvider'
 import { SettingsPage } from './iptv/SettingsPage'
 import { Brand, Sidebar } from './iptv/Sidebar'
-import { CountriesPage } from './iptv/CountriesPage'
 import { useMedia } from './iptv/useMedia'
 
 function Shell() {
@@ -34,7 +33,6 @@ function Shell() {
           {route.page === 'live' && <BrowsePage kind="live" />}
           {route.page === 'movies' && <BrowsePage kind="movie" />}
           {route.page === 'series' && <BrowsePage kind="series" />}
-          {route.page === 'countries' && <CountriesPage />}
           {route.page === 'settings' && <SettingsPage />}
         </main>
       </div>

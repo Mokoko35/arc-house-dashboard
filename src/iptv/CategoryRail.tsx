@@ -1,4 +1,5 @@
 import { Heart, SlidersHorizontal } from 'lucide-react'
+import { CountrySelect } from './CountrySelect'
 import { FAVORITES, type Category } from './kinds'
 
 interface Props {
@@ -8,6 +9,8 @@ interface Props {
   selected: string
   onSelect: (key: string) => void
   onManage: () => void
+  /** Categories with no recognized country. Listed under "Diğer" while a country is picked. */
+  otherNames?: Set<string>
 }
 
 interface Entry {
@@ -15,13 +18,19 @@ interface Entry {
   label: string
   count: number
   favorite?: boolean
+  /** A section title ("Diğer") instead of a category. */
+  heading?: boolean
 }
 
-function entries({ categories, total, favoriteCount }: Props): Entry[] {
+function entries({ categories, total, favoriteCount, otherNames }: Props): Entry[] {
+  const toEntry = (c: Category): Entry => ({ key: c.name, label: c.name, count: c.count })
+  const others = otherNames ? categories.filter((c) => otherNames.has(c.name)) : []
+  const main = otherNames ? categories.filter((c) => !otherNames.has(c.name)) : categories
   return [
     { key: '', label: 'Tümü', count: total },
     { key: FAVORITES, label: 'Favoriler', count: favoriteCount, favorite: true },
-    ...categories.map((c) => ({ key: c.name, label: c.name, count: c.count })),
+    ...main.map(toEntry),
+    ...(others.length > 0 ? [{ key: '__other__', label: 'Diğer', count: 0, heading: true }, ...others.map(toEntry)] : []),
   ]
 }
 
@@ -33,7 +42,10 @@ export function CategorySidebar(props: Props) {
   const { selected, onSelect, onManage } = props
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col self-start border-r border-white/10 bg-rail lg:flex" aria-label="Kategoriler">
-      <div className="flex items-center justify-between px-5 pb-2 pt-6">
+      <div className="px-4 pt-5">
+        <CountrySelect />
+      </div>
+      <div className="flex items-center justify-between px-5 pb-2 pt-4">
         <h2 className="label">Kategoriler</h2>
         <button
           type="button"
@@ -48,6 +60,13 @@ export function CategorySidebar(props: Props) {
       <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-6" role="tablist" aria-orientation="vertical">
         {entries(props).map((e) => {
           const on = selected === e.key
+          if (e.heading) {
+            return (
+              <li key={e.key} role="presentation" className="label px-3 pb-1 pt-4">
+                {e.label}
+              </li>
+            )
+          }
           return (
             <li key={e.key || 'all'}>
               <button
@@ -77,7 +96,9 @@ export function CategoryChips(props: Props) {
   const { selected, onSelect, onManage } = props
   return (
     <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6 lg:hidden" role="tablist" aria-label="Kategoriler">
-      {entries(props).map((e) => (
+      {entries(props)
+        .filter((e) => !e.heading)
+        .map((e) => (
         <button
           key={e.key || 'all'}
           type="button"

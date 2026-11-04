@@ -63,7 +63,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
 
   // Every channel's country, and how many channels each country has. Counted before the country filter is applied,
   // so the list of countries does not shrink when you tick one.
-  const { countryOptions, countryOf: codeOf } = useMemo(() => {
+  const { countryOptions, countryOf: codeOf, otherCount } = useMemo(() => {
     const codes = new WeakMap<Channel, string>()
     const counts = new Map<string, number>()
     for (const list of [unfiltered.live, unfiltered.movie, unfiltered.series]) {
@@ -73,11 +73,10 @@ export function MediaProvider({ children }: { children: ReactNode }) {
         counts.set(code, (counts.get(code) ?? 0) + 1)
       }
     }
-    let options: CountryCount[] = [...counts.entries()].map(([code, count]) => ({ code, count }))
-    // Nothing to filter by unless at least one channel has a country.
-    if (!options.some((o) => o.code !== NO_COUNTRY)) options = []
-    options.sort((a, b) => (a.code === NO_COUNTRY ? 1 : b.code === NO_COUNTRY ? -1 : b.count - a.count || a.code.localeCompare(b.code)))
-    return { countryOptions: options, countryOf: (c: Channel) => codes.get(c) ?? NO_COUNTRY }
+    // Only real countries can be picked. Channels with no recognized country ("Diğer") are never filtered out.
+    const options: CountryCount[] = [...counts.entries()].filter(([code]) => code !== NO_COUNTRY).map(([code, count]) => ({ code, count }))
+    options.sort((a, b) => b.count - a.count || a.code.localeCompare(b.code))
+    return { countryOptions: options, countryOf: (c: Channel) => codes.get(c) ?? NO_COUNTRY, otherCount: counts.get(NO_COUNTRY) ?? 0 }
   }, [unfiltered])
 
   const activeCountries = useMemo(() => prefs.countries.filter((code) => countryOptions.some((o) => o.code === code)), [prefs.countries, countryOptions])
@@ -85,7 +84,11 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   // The country filter works on the whole app, so counts, categories and search all follow it.
   const parts = useMemo<Partition>(() => {
     if (activeCountries.length === 0) return unfiltered
-    const keep = (list: Channel[]) => list.filter((c) => activeCountries.includes(codeOf(c)))
+    // The picked countries, plus everything whose country is unknown, so no content is lost.
+    const keep = (list: Channel[]) => list.filter((c) => {
+      const code = codeOf(c)
+      return code === NO_COUNTRY || activeCountries.includes(code)
+    })
     return { live: keep(unfiltered.live), movie: keep(unfiltered.movie), series: keep(unfiltered.series) }
   }, [unfiltered, activeCountries, codeOf])
 
@@ -189,6 +192,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     prefs,
     updatePrefs,
     countryOptions,
+    otherCount,
     activeCountries,
     setCountries: (countries) => updatePrefs({ countries }),
     route,

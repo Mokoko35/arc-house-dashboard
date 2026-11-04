@@ -3,14 +3,16 @@ import type { Channel } from './types'
 /** Channels whose name has no country prefix. */
 export const NO_COUNTRY = '--'
 
-// ISO 3166 two-letter codes that list makers use as prefixes ("TR: TRT 1", "[DE] ZDF", "US | CNN").
+// Two-letter country codes, the same ones used for internet domains (.tr, .de ...), that list makers use as prefixes ("TR: TRT 1", "[DE] ZDF", "US | CNN").
 const CODES = new Set(
   (
     'AD AE AF AL AM AO AR AT AU AZ BA BD BE BF BG BH BI BJ BN BO BR BS BW BY BZ CA CD CF CG CH CI CL CM CN CO CR CU CV CY CZ ' +
     'DE DJ DK DO DZ EC EE EG ER ES ET FI FJ FR GA GB GE GH GM GN GQ GR GT GY HK HN HR HT HU ID IE IL IN IQ IR IS IT JM JO JP ' +
     'KE KG KH KR KW KZ LA LB LI LK LR LS LT LU LV LY MA MC MD ME MG MK ML MM MN MO MR MT MU MV MW MX MY MZ NA NE NG NI NL NO ' +
     'NP NZ OM PA PE PG PH PK PL PR PS PT PY QA RO RS RU RW SA SC SD SE SG SI SK SL SM SN SO SR SS SV SY SZ TD TG TH TJ TM TN ' +
-    'TR TT TW TZ UA UG US UY UZ VA VE VN XK YE ZA ZM ZW'
+    'TR TT TW TZ UA UG US UY UZ VA VE VN XK YE ZA ZM ZW ' +
+    // Other internet country-code domains (.eu, .gl, .fo ...) that list makers also use as prefixes.
+    'EU AG AI AW AX BB BM BT DM FO GD GI GL GU KM KN KP KY LC MH MQ GP GF MS NC NR PF PW SB TL VC VG VI VU YT'
   ).split(' '),
 )
 
@@ -22,7 +24,7 @@ export interface CountryCount {
 }
 
 // Separators list makers put after the country code: "TR: x", "TR | x", "TR ▸ x", "TR - x", "TR » x".
-const SEP = '[:|\\-–—/▸►▶»›>‣→⇒•·~]'
+const SEP = '[:|\\-–—/▸►▶»›>‣→⇒•·~_]'
 // "[TR] Name" and "(TR) Name": the brackets are the separator.
 const BRACKETED = /^\s*[[(]\s*([A-Za-z]{2})\s*[\])]/
 // "TR: Name", "|TR| Name", "TR ▸ Name". The text after the separator is kept in group 2.
@@ -105,6 +107,9 @@ function fromGroup(group: string | undefined): string | null {
   groupCache.set(group, result)
   return result
 }
+
+/** The country a category is named after ("TR | Haber", "[DE] Sport"). Null when its name has none. */
+export const countryOfGroup = (group: string | undefined): string | null => fromGroup(group)
 
 /** The country a channel belongs to: its category first (list makers group by country), then its name. Null when unknown. */
 export const countryOf = (channel: Channel): string | null => fromGroup(channel.group) ?? fromName(channel.name)
