@@ -10,6 +10,13 @@ import type { Epg } from './useEpg'
 import type { XtreamLogin } from './types'
 import type { CountryCount } from './countries'
 
+export interface ChannelNav {
+  /** 1-based position of the playing channel in the list it was picked from. */
+  position: number
+  total: number
+  step: (delta: -1 | 1) => void
+}
+
 export type PlayerMode = 'closed' | 'modal' | 'mini'
 
 export interface Media {
@@ -21,7 +28,9 @@ export interface Media {
   /** Film or series whose detail window is open. */
   detail: Channel | null
   /** Opens the detail window for films and portal series, and plays everything else straight away. */
-  openItem: (channel: Channel) => void
+  openItem: (channel: Channel, queue?: Channel[]) => void
+  /** Previous/next channel while a live channel plays. Null for films, episodes, or a list of one. */
+  channelNav: ChannelNav | null
   closeDetail: () => void
   /** All channels of the active list, split into live, movies and series. */
   parts: Partition
@@ -31,6 +40,9 @@ export interface Media {
   visible: Partition
   /** All categories of a kind, for category management. Not affected by the country filter. */
   categories: (kind: Kind) => Category[]
+  /** The order the user arranged the categories in (names). Empty means A to Z. */
+  orderFor: (kind: Kind) => string[]
+  setOrderFor: (kind: Kind, names: string[]) => void
   hiddenFor: (kind: Kind) => Set<string>
   setHiddenFor: (kind: Kind, names: string[]) => void
   favorites: Favorites

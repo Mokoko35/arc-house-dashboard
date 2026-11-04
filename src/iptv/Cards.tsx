@@ -33,15 +33,15 @@ function hueOf(name: string): number {
   return parseInt(hashId(name).slice(0, 4), 36) % 360
 }
 
-function FavoriteButton({ favorite, name, onClick }: { favorite: boolean; name: string; onClick: () => void }) {
+function FavoriteButton({ favorite, name, onClick, row = false }: { favorite: boolean; name: string; onClick: () => void; row?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={favorite}
       aria-label={favorite ? `${name} favorilerden çıkar` : `${name} favorilere ekle`}
-      className={`absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-black/55 backdrop-blur transition ${
-        favorite ? 'text-accent' : 'text-white/80 opacity-100 hover:text-white lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100'
+      className={`absolute grid h-9 w-9 place-items-center rounded-full bg-black/55 backdrop-blur transition ${row ? 'right-3 top-3 sm:top-1/2 sm:-translate-y-1/2' : 'right-2 top-2'} ${
+        favorite ? 'text-accent' : `text-white/80 hover:text-white ${row ? '' : 'opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-visible:opacity-100'}`
       }`}
     >
       <Heart size={16} fill={favorite ? 'currentColor' : 'none'} />
@@ -49,7 +49,7 @@ function FavoriteButton({ favorite, name, onClick }: { favorite: boolean; name: 
   )
 }
 
-function Artwork({ channel, showLogo, fit }: { channel: Channel; showLogo: boolean; fit: 'contain' | 'cover' }) {
+export function Artwork({ channel, showLogo, fit }: { channel: Channel; showLogo: boolean; fit: 'contain' | 'cover' }) {
   const [failed, setFailed] = useState(false)
   const hue = hueOf(channel.name)
   const src = showLogo && !failed ? channel.logo : undefined
@@ -67,6 +67,61 @@ function Artwork({ channel, showLogo, fit }: { channel: Channel; showLogo: boole
         <span className="display text-4xl font-semibold text-white/70">{initials(channel.name)}</span>
       )}
     </div>
+  )
+}
+
+/** Live TV as a row: logo, name, and what is on now and next, in text big enough to read from the sofa. */
+export function ChannelRow({ channel, active, favorite, showLogo, onPlay, onFavorite, epg }: CardProps) {
+  return (
+    <article className="group relative">
+      <button
+        type="button"
+        onClick={() => onPlay(channel)}
+        aria-label={`${channel.name} kanalını oynat`}
+        aria-current={active || undefined}
+        className={`grid w-full grid-cols-[4rem_minmax(0,1fr)] items-center gap-x-4 gap-y-3 rounded-2xl border p-3 pr-14 text-left transition hover:border-white/25 hover:bg-white/[0.06] sm:grid-cols-[4rem_minmax(0,1fr)_minmax(0,1.6fr)] sm:pr-16 ${
+          active ? 'border-accent bg-accent/10' : 'border-white/10 bg-white/[0.04]'
+        }`}
+      >
+        <span className="relative block h-16 w-16 overflow-hidden rounded-xl">
+          <Artwork channel={channel} showLogo={showLogo} fit="contain" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-base font-semibold text-[var(--ink)]">{channel.name}</span>
+          <span className="mt-0.5 block truncate text-sm text-[var(--subtle)]">{active ? 'İzleniyor' : groupOf(channel)}</span>
+        </span>
+        <span className="col-span-2 block min-w-0 sm:col-span-1">
+          {epg?.now || epg?.next ? (
+            <>
+              {epg.now && (
+                <>
+                  <span className="flex items-baseline gap-2">
+                    <span className="shrink-0 text-xs font-bold tracking-wider text-accent">ŞİMDİ</span>
+                    <span className="shrink-0 text-sm tabular-nums text-[var(--subtle)]">
+                      {clock(epg.now.start)} - {clock(epg.now.stop)}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block truncate text-base text-[var(--ink)]">{epg.now.title}</span>
+                  <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                    <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(epg.progress * 100)}%` }} />
+                  </span>
+                </>
+              )}
+              {epg.next && (
+                <span className="mt-1.5 flex items-baseline gap-2 text-sm">
+                  <span className="shrink-0 text-xs font-bold tracking-wider text-[var(--subtle)]">SONRA</span>
+                  <span className="shrink-0 tabular-nums text-[var(--subtle)]">{clock(epg.next.start)}</span>
+                  <span className="min-w-0 truncate text-[var(--ink-2)]">{epg.next.title}</span>
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="block text-sm text-[var(--subtle)]">Program bilgisi yok</span>
+          )}
+        </span>
+      </button>
+      <FavoriteButton row favorite={favorite} name={channel.name} onClick={() => onFavorite(channel)} />
+    </article>
   )
 }
 

@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
-import { MediaContext, type Media, type PlayerMode } from './context'
+import { MediaContext, type ChannelNav, type Media, type PlayerMode } from './context'
 import { type Kind, type Partition, categoriesOf, groupOf, kindOf, partition } from './kinds'
-import { DEFAULT_PREFS, type HiddenMap, type Prefs, hiddenKey, loadHidden, loadPrefs, saveHidden, savePrefs } from './prefs'
+import { DEFAULT_PREFS, type HiddenMap, type Prefs, hiddenKey, loadHidden, loadOrder, loadPrefs, saveHidden, saveOrder, savePrefs, type OrderMap } from './prefs'
 import { useRoute } from './router'
 import { type Favorites, favKey, loadFavorites, saveFavorites } from './storage'
 import type { Channel } from './types'
@@ -15,6 +15,7 @@ import { loginFromPlaylistUrl, loginFromStreamUrl, vodIdOf } from './xtreamApi'
 import type { XtreamLogin } from './types'
 
 const NONE = new Set<string>()
+const NO_ORDER: string[] = []
 
 export function MediaProvider({ children }: { children: ReactNode }) {
   const route = useRoute()
@@ -23,10 +24,12 @@ export function MediaProvider({ children }: { children: ReactNode }) {
 
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
   const [hidden, setHidden] = useState<HiddenMap>(loadHidden)
+  const [order, setOrder] = useState<OrderMap>(loadOrder)
   const [favorites, setFavorites] = useState<Favorites>(loadFavorites)
   const [playerMode, setPlayerMode] = useState<PlayerMode>('closed')
   const [playing, setPlaying] = useState<{ playlistId: string | null; channel: Channel } | null>(null)
   const [detail, setDetail] = useState<Channel | null>(null)
+  const [queue, setQueue] = useState<Channel[]>([])
   const [adding, setAdding] = useState(false)
   const [managing, setManaging] = useState<Kind | null>(null)
 
@@ -112,6 +115,20 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     return { live: filter('live'), movie: filter('movie'), series: filter('series') }
   }, [parts, hiddenFor])
 
+  const orderFor = useCallback((kind: Kind): string[] => (active ? (order[hiddenKey(active.id, kind)] ?? NO_ORDER) : NO_ORDER), [active, order])
+
+  const setOrderFor = useCallback(
+    (kind: Kind, names: string[]) => {
+      if (!active) return
+      setOrder((prev) => {
+        const next = { ...prev, [hiddenKey(active.id, kind)]: names }
+        saveOrder(next)
+        return next
+      })
+    },
+    [active],
+  )
+
   const setHiddenFor = useCallback(
     (kind: Kind, names: string[]) => {
       if (!active) return
@@ -148,13 +165,34 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   )
 
   const openItem = useCallback(
-    (c: Channel) => {
+    (c: Channel, list?: Channel[]) => {
       const kind = kindOf(c)
       if (kind !== 'live' && xtream && (c.seriesId || kind === 'movie')) setDetail(c)
-      else play(c)
+      else {
+        // The list the channel was picked from (a category, a search) is what previous/next walks through.
+        if (kind === 'live') setQueue(list ?? [])
+        play(c)
+      }
     },
     [xtream, play],
   )
+
+  const current = playing && playing.playlistId === (active?.id ?? null) && !(prefs.adultFilter && isAdult(playing.channel)) ? playing.channel : null
+
+  const channelNav = useMemo<ChannelNav | null>(() => {
+    if (!current || kindOf(current) !== 'live') return null
+    const list = queue.some((c) => c.id === current.id) ? queue : visible.live
+    const index = list.findIndex((c) => c.id === current.id)
+    if (index < 0 || list.length < 2) return null
+    return {
+      position: index + 1,
+      total: list.length,
+      step: (delta) => {
+        const target = list[(index + delta + list.length) % list.length]
+        if (target) play(target)
+      },
+    }
+  }, [current, queue, visible.live, play])
 
   const updatePrefs = useCallback((patch: Partial<Prefs>) => {
     setPrefs((prev) => {
@@ -172,6 +210,8 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     categories: (kind) => categoriesOf(unfiltered[kind]),
     hiddenFor,
     setHiddenFor,
+    orderFor,
+    setOrderFor,
     favorites,
     isFavorite: (c) => Boolean(active && favorites[favKey(active.id, c.id)]),
     toggleFavorite,
@@ -181,7 +221,8 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     detail,
     openItem,
     closeDetail: () => setDetail(null),
-    current: playing && playing.playlistId === (active?.id ?? null) && !(prefs.adultFilter && isAdult(playing.channel)) ? playing.channel : null,
+    channelNav,
+    current,
     playerMode,
     minimizePlayer: () => setPlayerMode((m) => (m === 'modal' ? 'mini' : m)),
     expandPlayer: () => setPlayerMode((m) => (m === 'mini' ? 'modal' : m)),

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import { Heart, Maximize2, Minimize2, Power, X } from 'lucide-react'
+import { Heart, Maximize2, Minimize2, Power, SkipBack, SkipForward, X } from 'lucide-react'
 import { KIND_BADGE, groupOf, kindOf } from './kinds'
-import { EpgPanel } from './EpgPanel'
+import { EpgTimeline } from './EpgTimeline'
 import { Player } from './Player'
 import { useMedia } from './useMedia'
 
@@ -15,7 +15,7 @@ const DESCRIPTION = {
  * minimizing keeps the stream playing instead of restarting it.
  */
 export function PlayerOverlay() {
-  const { current, playerMode, minimizePlayer, expandPlayer, stopPlayer, isFavorite, toggleFavorite, lists, prefs, epg } = useMedia()
+  const { current, playerMode, minimizePlayer, expandPlayer, stopPlayer, isFavorite, toggleFavorite, lists, prefs, epg, channelNav } = useMedia()
   const modal = playerMode === 'modal' && current !== null
 
   useEffect(() => {
@@ -47,24 +47,35 @@ export function PlayerOverlay() {
         aria-label={`Oynatıcı: ${current.name}`}
         className={
           modal
-            ? 'fixed left-1/2 top-1/2 z-50 max-h-[96dvh] w-[min(1100px,96vw,calc((100dvh_-_250px)*1.7778))] min-w-[min(96vw,360px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/15 bg-elev shadow-2xl'
+            ? 'fixed left-1/2 top-1/2 z-50 max-h-[96dvh] w-[min(1100px,96vw,calc((100dvh_-_400px)*1.7778))] min-w-[min(96vw,360px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/15 bg-elev shadow-2xl'
             : 'fixed bottom-[4.5rem] right-3 z-40 w-64 overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl sm:w-80 lg:bottom-5 lg:right-5'
         }
       >
-        <Player channel={current} autoplay={prefs.autoplay} className={modal ? 'rounded-none' : 'rounded-none'} />
+        <Player
+          channel={current}
+          autoplay={prefs.autoplay}
+          className="rounded-none"
+          compact={!modal}
+          onPrev={modal && channelNav ? () => channelNav.step(-1) : undefined}
+          onNext={modal && channelNav ? () => channelNav.step(1) : undefined}
+          navLabel={channelNav ? `${channelNav.position} / ${channelNav.total}` : undefined}
+          topRight={
+            modal ? (
+              <button
+                type="button"
+                onClick={minimizePlayer}
+                aria-label="Pencereyi kapat ve köşeye küçült"
+                title="Kapat (yayın köşede devam eder)"
+                className="grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            ) : undefined
+          }
+        />
 
         {modal ? (
           <>
-            <button
-              type="button"
-              onClick={minimizePlayer}
-              aria-label="Pencereyi kapat ve köşeye küçült"
-              title="Kapat (yayın köşede devam eder)"
-              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-white/85 hover:text-white"
-            >
-              <X size={18} />
-            </button>
-
             <div className="p-5 sm:p-6">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">{KIND_BADGE[kind]}</span>
@@ -76,12 +87,22 @@ export function PlayerOverlay() {
               <h2 className="display mt-2 text-balance text-2xl font-semibold sm:text-3xl">{current.name}</h2>
               {current.subtitle && <p className="mt-1 text-sm font-medium text-accent">{current.subtitle}</p>}
               {kind === 'live' ? (
-                <EpgPanel channel={current} epg={epg} />
+                <EpgTimeline channel={current} epg={epg} />
               ) : (
                 <p className="mt-1.5 line-clamp-3 max-w-3xl text-pretty text-sm text-[var(--subtle)]">{current.description ?? DESCRIPTION[kind]}</p>
               )}
 
               <div className="mt-4 flex flex-wrap gap-2">
+                {channelNav && (
+                  <>
+                    <button type="button" onClick={() => channelNav.step(-1)} className="btn-ghost">
+                      <SkipBack size={16} aria-hidden="true" /> Önceki kanal
+                    </button>
+                    <button type="button" onClick={() => channelNav.step(1)} className="btn-ghost">
+                      Sonraki kanal <SkipForward size={16} aria-hidden="true" />
+                    </button>
+                  </>
+                )}
                 <button type="button" onClick={() => toggleFavorite(current)} aria-pressed={fav} className={`btn-ghost ${fav ? '!border-accent !text-accent' : ''}`}>
                   <Heart size={16} fill={fav ? 'currentColor' : 'none'} aria-hidden="true" />
                   {fav ? 'Favorilerde' : 'Favorilere ekle'}

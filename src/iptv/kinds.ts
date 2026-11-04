@@ -43,6 +43,20 @@ export function categoriesOf(channels: Channel[]): Category[] {
   return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => a.name.localeCompare(b.name, 'tr'))
 }
 
+/** Puts categories in the order the user arranged. Categories that are not in `order` (new ones) follow, A to Z. */
+export function sortByOrder(categories: Category[], order: string[]): Category[] {
+  if (order.length === 0) return categories
+  const rank = new Map(order.map((name, i) => [name, i]))
+  return [...categories].sort((a, b) => {
+    const ra = rank.get(a.name)
+    const rb = rank.get(b.name)
+    if (ra !== undefined && rb !== undefined) return ra - rb
+    if (ra !== undefined) return -1
+    if (rb !== undefined) return 1
+    return a.name.localeCompare(b.name, 'tr')
+  })
+}
+
 /** Special category key for "only my favorites". Cannot clash with a real category name. */
 export const FAVORITES = '\u0000favorites'
 

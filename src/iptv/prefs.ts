@@ -3,6 +3,7 @@ import { DEFAULT_THEME, THEMES, type ThemeId } from './themes'
 
 export type CardSize = 'sm' | 'md' | 'lg'
 export type EpgRefresh = 'off' | '6' | '12' | '24'
+export type LiveView = 'grid' | 'list'
 
 export interface Prefs {
   theme: ThemeId
@@ -14,6 +15,8 @@ export interface Prefs {
   sidebarCollapsed: boolean
   showLogos: boolean
   cardSize: CardSize
+  /** Live TV as cards or as rows with the program guide. */
+  liveView: LiveView
   autoplay: boolean
   bufferSeconds: 10 | 30 | 60
   hardwareDecoding: boolean
@@ -28,6 +31,7 @@ export const DEFAULT_PREFS: Prefs = {
   sidebarCollapsed: false,
   showLogos: true,
   cardSize: 'md',
+  liveView: 'grid',
   autoplay: true,
   bufferSeconds: 30,
   hardwareDecoding: true,
@@ -37,6 +41,7 @@ export const DEFAULT_PREFS: Prefs = {
 
 const PREFS_KEY = 'iptv-player:prefs:v1'
 const HIDDEN_KEY = 'iptv-player:hidden-categories:v1'
+const ORDER_KEY = 'iptv-player:category-order:v1'
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
@@ -52,6 +57,7 @@ export function loadPrefs(): Prefs {
       sidebarCollapsed: typeof raw.sidebarCollapsed === 'boolean' ? raw.sidebarCollapsed : d.sidebarCollapsed,
       showLogos: typeof raw.showLogos === 'boolean' ? raw.showLogos : d.showLogos,
       cardSize: raw.cardSize === 'sm' || raw.cardSize === 'md' || raw.cardSize === 'lg' ? raw.cardSize : d.cardSize,
+      liveView: raw.liveView === 'list' || raw.liveView === 'grid' ? raw.liveView : d.liveView,
       autoplay: typeof raw.autoplay === 'boolean' ? raw.autoplay : d.autoplay,
       bufferSeconds: raw.bufferSeconds === 10 || raw.bufferSeconds === 30 || raw.bufferSeconds === 60 ? raw.bufferSeconds : d.bufferSeconds,
       hardwareDecoding: typeof raw.hardwareDecoding === 'boolean' ? raw.hardwareDecoding : d.hardwareDecoding,
@@ -93,6 +99,31 @@ export function loadHidden(): HiddenMap {
 export function saveHidden(map: HiddenMap): void {
   try {
     localStorage.setItem(HIDDEN_KEY, JSON.stringify(map))
+  } catch {
+    // ignore
+  }
+}
+
+/** The order the user arranged categories in, per playlist and content type. Names not listed go after, A to Z. */
+export type OrderMap = Record<string, string[]>
+
+export function loadOrder(): OrderMap {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(ORDER_KEY) ?? 'null')
+    if (!isRecord(raw)) return {}
+    const out: OrderMap = {}
+    for (const [k, v] of Object.entries(raw)) {
+      if (Array.isArray(v)) out[k] = (v as unknown[]).filter((x): x is string => typeof x === 'string')
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+export function saveOrder(map: OrderMap): void {
+  try {
+    localStorage.setItem(ORDER_KEY, JSON.stringify(map))
   } catch {
     // ignore
   }
