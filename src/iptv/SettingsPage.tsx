@@ -193,13 +193,13 @@ function Epg() {
 }
 
 function Categories() {
-  const { parts, hiddenFor, setHiddenFor, openManage, lists } = useMedia()
+  const { allParts, hiddenFor, setHiddenFor, openManage, lists } = useMedia()
   if (!lists.active) return <p className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-sm text-[var(--subtle)]">Kategorileri yönetmek için önce bir liste ekle.</p>
   return (
     <Section title="Kategori Yönetimi" description="Gizlediğin kategoriler listelerden ve ızgaralardan kalkar. Kanalların silinmez.">
       {KINDS.map((kind) => {
-        const total = categoriesOf(parts[kind]).length
-        const hiddenCount = categoriesOf(parts[kind]).filter((c) => hiddenFor(kind).has(c.name)).length
+        const total = categoriesOf(allParts[kind]).length
+        const hiddenCount = categoriesOf(allParts[kind]).filter((c) => hiddenFor(kind).has(c.name)).length
         return (
           <div key={kind} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
             <div>

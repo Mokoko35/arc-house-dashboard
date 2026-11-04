@@ -5,8 +5,9 @@ import { useMedia } from './useMedia'
 
 /** Checked = shown. Unchecked categories disappear from the category lists and grids. */
 function ModalBody({ kind }: { kind: Kind }) {
-  const { parts, hiddenFor, setHiddenFor, closeManage } = useMedia()
-  const all = useMemo(() => categoriesOf(parts[kind]), [parts, kind])
+  // Always the full list, never narrowed by the country filter, so saving cannot un-hide categories you cannot see here.
+  const { allParts, hiddenFor, setHiddenFor, closeManage } = useMedia()
+  const all = useMemo(() => categoriesOf(allParts[kind]), [allParts, kind])
   const [hidden, setHidden] = useState<Set<string>>(() => new Set(hiddenFor(kind)))
   const [query, setQuery] = useState('')
 

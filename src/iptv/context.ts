@@ -25,8 +25,11 @@ export interface Media {
   closeDetail: () => void
   /** All channels of the active list, split into live, movies and series. */
   parts: Partition
-  /** The same, without channels in categories the user hid. */
+  /** Every channel, whatever the country filter says. Category management works on this, so the two never interfere. */
+  allParts: Partition
+  /** The same as `parts`, without channels in categories the user hid. */
   visible: Partition
+  /** All categories of a kind, for category management. Not affected by the country filter. */
   categories: (kind: Kind) => Category[]
   hiddenFor: (kind: Kind) => Set<string>
   setHiddenFor: (kind: Kind, names: string[]) => void

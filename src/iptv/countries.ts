@@ -23,12 +23,38 @@ export interface CountryCount {
   count: number
 }
 
-// Separators list makers put after the country code: "TR: x", "TR | x", "TR ▸ x", "TR - x", "TR » x".
-const SEP = '[:|\\-–—/▸►▶»›>‣→⇒•·~_]'
-// "[TR] Name" and "(TR) Name": the brackets are the separator.
-const BRACKETED = /^\s*[[(]\s*([A-Za-z]{2})\s*[\])]/
-// "TR: Name", "|TR| Name", "TR ▸ Name". The text after the separator is kept in group 2.
-const PREFIX = new RegExp(`^\\s*\\|?\\s*([A-Za-z]{2})\\s*\\|?\\s*${SEP}\\s*(.*)$`)
+// A category or channel name starts with its country: "TR |", "TR:", "[TR]", "(TR)", "TR -", "TR ▸", "┃TR┃", "🇹🇷".
+// Rather than list every separator, anything that is punctuation or a symbol counts (letters, digits and a few look-alikes do not).
+const isJunk = (ch: string) => /^[\s\p{P}\p{S}]$/u.test(ch)
+const isSeparator = (ch: string) => ':|/\\'.includes(ch) || /^[\p{Pd}\p{Pc}\p{Pe}\p{Pf}\p{So}]$/u.test(ch) || (/^\p{Sm}$/u.test(ch) && !'+=<'.includes(ch))
+const FLAG = /^[\s\p{P}]*([\u{1F1E6}-\u{1F1FF}])([\u{1F1E6}-\u{1F1FF}])/u
+
+/** Fullwidth letters become normal ones, invisible characters go away. */
+const clean = (text: string) => text.normalize('NFKC').replace(/\p{Cf}/gu, '').replace(/[\p{Cc}\s]+/gu, ' ').trim()
+
+/** Splits "TR ▸ Ulusal" into the code ("TR") and the rest ("Ulusal"). Null when the text does not start with a two-letter code. */
+function parsePrefix(text: string): { code: string; rest: string } | null {
+  const t = clean(text)
+  const flag = FLAG.exec(t)
+  if (flag) {
+    const code = String.fromCharCode(...[flag[1], flag[2]].map((c) => (c ?? '').codePointAt(0)! - 0x1f1e6 + 65))
+    return { code, rest: t.slice(flag[0].length).replace(/^[\s\p{P}\p{S}]+/u, '') }
+  }
+  const chars = [...t]
+  let i = 0
+  while (i < chars.length && isJunk(chars[i] ?? '')) i++
+  const a = chars[i] ?? ''
+  const b = chars[i + 1] ?? ''
+  if (!/^[A-Za-z]$/.test(a) || !/^[A-Za-z]$/.test(b)) return null
+  const code = a + b
+  let k = i + 2
+  if (k >= chars.length) return { code, rest: '' }
+  if (/^[\p{L}\p{N}]$/u.test(chars[k] ?? '')) return null // "TRT", "DE1"
+  while (chars[k] === ' ') k++
+  if (k >= chars.length) return { code, rest: '' }
+  if (!isSeparator(chars[k] ?? '')) return null // "IT Support": a plain space is not a separator
+  return { code, rest: chars.slice(k + 1).join('').replace(/^[\s\p{P}\p{S}]+/u, '') }
+}
 
 const norm = (s: string) =>
   s
@@ -85,8 +111,8 @@ function codeFromName(text: string): string | null {
 }
 
 function fromName(name: string | undefined): string | null {
-  if (!name) return null
-  return validCode((BRACKETED.exec(name) ?? PREFIX.exec(name))?.[1])
+  const parsed = name ? parsePrefix(name) : null
+  return parsed ? validCode(parsed.code) : null
 }
 
 const groupCache = new Map<string, string | null>()
@@ -96,14 +122,12 @@ function fromGroup(group: string | undefined): string | null {
   if (!group) return null
   const hit = groupCache.get(group)
   if (hit !== undefined) return hit
+  const parsed = parsePrefix(group)
   let result: string | null = null
-  const m = BRACKETED.exec(group) ?? PREFIX.exec(group)
-  if (m) {
-    const rest = PREFIX.exec(group)?.[2] ?? group.replace(BRACKETED, '')
-    result = codeFromName(rest) ?? validCode(m[1])
-  } else if (group.length <= 30) {
-    result = codeFromName(group)
-  }
+  // "AR" in front of "Arabic" is the language, not Argentina.
+  if (parsed && parsed.code.toUpperCase() === 'AR' && /^arab/i.test(parsed.rest)) result = null
+  else if (parsed) result = codeFromName(parsed.rest) ?? validCode(parsed.code)
+  else if (group.length <= 30) result = codeFromName(group)
   groupCache.set(group, result)
   return result
 }
