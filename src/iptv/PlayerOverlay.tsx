@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Maximize2, X } from 'lucide-react'
+import { kindOf } from './kinds'
 import { NowPlayingInfo } from './NowPlayingInfo'
 import { Player } from './Player'
 import { useMedia } from './useMedia'
@@ -22,6 +23,21 @@ export function PlayerOverlay() {
   const mode = !current || playerMode === 'closed' ? 'closed' : inlineHost ? 'inline' : playerMode
   const modal = mode === 'modal'
   const inline = mode === 'inline'
+
+  // Is the player filling the screen? Decides what the X button and a right-click do.
+  const [isFull, setIsFull] = useState(false)
+  useEffect(() => {
+    const onChange = () => setIsFull(document.fullscreenElement !== null)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+  const vod = current !== null && kindOf(current) !== 'live'
+  // "Back": leave full screen first, then close. A film or episode is stopped; a live channel shrinks to the corner.
+  const goBack = () => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+    if (vod) stopPlayer()
+    else minimizePlayer()
+  }
 
   // Inline: follow the empty box in the page.
   const [box, setBox] = useState<Box | null>(null)
@@ -68,14 +84,15 @@ export function PlayerOverlay() {
       onFullscreenHandled={fullscreenHandled}
       onPrev={!(mode === 'mini') && channelNav ? () => channelNav.step(-1) : undefined}
       onNext={!(mode === 'mini') && channelNav ? () => channelNav.step(1) : undefined}
+      onBack={(modal || inline) && vod ? goBack : undefined}
       navLabel={channelNav ? `${channelNav.position} / ${channelNav.total}` : undefined}
       topRight={
-        modal ? (
+        modal || (inline && vod && isFull) ? (
           <button
             type="button"
-            onClick={minimizePlayer}
-            aria-label="Pencereyi kapat ve köşeye küçült"
-            title="Kapat (yayın köşede devam eder)"
+            onClick={isFull ? goBack : minimizePlayer}
+            aria-label={isFull && vod ? 'Geri: tam ekrandan çık ve oynatıcıyı kapat' : 'Pencereyi kapat ve köşeye küçült'}
+            title={isFull && vod ? 'Geri (sağ tık da aynı işi yapar)' : 'Kapat (yayın köşede devam eder)'}
             className="grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
           >
             <X size={20} />

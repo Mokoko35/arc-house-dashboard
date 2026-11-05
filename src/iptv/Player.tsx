@@ -50,6 +50,8 @@ interface CoreProps {
   /** Enter full screen as soon as this player shows, for a film or episode the user just chose to play. */
   wantFullscreen?: boolean
   onFullscreenHandled?: () => void
+  /** Right-click in full screen. Meant as "back": leave full screen and close the player. */
+  onBack?: () => void
 }
 
 function ControlButton({ label, onClick, children, className = '' }: { label: string; onClick: () => void; children: ReactNode; className?: string }) {
@@ -69,7 +71,7 @@ function ControlButton({ label, onClick, children, className = '' }: { label: st
   )
 }
 
-function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, navLabel, topRight, wantFullscreen = false, onFullscreenHandled }: CoreProps) {
+function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, navLabel, topRight, wantFullscreen = false, onFullscreenHandled, onBack }: CoreProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const hideTimer = useRef<number | undefined>(undefined)
@@ -243,10 +245,34 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
   }, [wantFullscreen, compact, onFullscreenHandled])
 
   useEffect(() => {
-    const onChange = () => setFullscreen(document.fullscreenElement === wrapRef.current)
+    const onChange = () => {
+      setFullscreen(document.fullscreenElement === wrapRef.current)
+      wake() // entering or leaving full screen always brings the controls back
+    }
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
-  }, [])
+  }, [wake])
+
+  // Shrinking to the corner removes the controls, so full screen must not be left running with nothing to click.
+  useEffect(() => {
+    if (compact && document.fullscreenElement === wrapRef.current) void document.exitFullscreen().catch(() => undefined)
+  }, [compact])
+
+  // Going from the corner back to a window starts with the controls showing, not with whatever state they were left in.
+  useEffect(() => {
+    const id = window.setTimeout(wake, 0)
+    return () => window.clearTimeout(id)
+  }, [compact, wake])
+
+  // Mouse or touch anywhere in full screen counts as activity, even over the overlay or the close button.
+  useEffect(() => {
+    if (!fullscreen) return
+    const events = ['pointermove', 'mousemove', 'pointerdown', 'touchstart'] as const
+    for (const name of events) document.addEventListener(name, wake, { passive: true })
+    return () => {
+      for (const name of events) document.removeEventListener(name, wake)
+    }
+  }, [fullscreen, wake])
 
   const seek = (seconds: number) => {
     const video = videoRef.current
@@ -287,6 +313,12 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
   return (
     <div
       ref={wrapRef}
+      onContextMenu={(e) => {
+        // Right-click on the full screen picture is "back".
+        if (!onBack || compact || document.fullscreenElement !== wrapRef.current) return
+        e.preventDefault()
+        onBack()
+      }}
       onPointerMove={compact ? undefined : wake}
       onPointerDown={compact ? undefined : wake}
       onFocusCapture={compact ? undefined : wake}
@@ -402,9 +434,10 @@ interface PlayerProps {
   topRight?: ReactNode
   wantFullscreen?: boolean
   onFullscreenHandled?: () => void
+  onBack?: () => void
 }
 
-export function Player({ channel, autoplay = true, className = 'rounded-2xl border border-white/10', compact = false, onPrev, onNext, navLabel, topRight, wantFullscreen, onFullscreenHandled }: PlayerProps) {
+export function Player({ channel, autoplay = true, className = 'rounded-2xl border border-white/10', compact = false, onPrev, onNext, navLabel, topRight, wantFullscreen, onFullscreenHandled, onBack }: PlayerProps) {
   if (!channel) {
     return (
       <div className="grid aspect-video w-full place-items-center rounded-2xl border border-dashed border-white/15 bg-black/40 p-6 text-center">
@@ -416,5 +449,5 @@ export function Player({ channel, autoplay = true, className = 'rounded-2xl bord
     )
   }
   // No key on purpose: the same <video> and wrapper stay mounted for every channel, so full screen survives a channel change.
-  return <PlayerCore channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} wantFullscreen={wantFullscreen} onFullscreenHandled={onFullscreenHandled} />
+  return <PlayerCore channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} wantFullscreen={wantFullscreen} onFullscreenHandled={onFullscreenHandled} onBack={onBack} />
 }
