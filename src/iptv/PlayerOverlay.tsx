@@ -1,22 +1,46 @@
-import { useEffect } from 'react'
-import { Heart, Maximize2, Minimize2, Power, SkipBack, SkipForward, X } from 'lucide-react'
-import { KIND_BADGE, groupOf, kindOf } from './kinds'
-import { EpgTimeline } from './EpgTimeline'
+import { useEffect, useState } from 'react'
+import { Maximize2, X } from 'lucide-react'
+import { NowPlayingInfo } from './NowPlayingInfo'
 import { Player } from './Player'
 import { useMedia } from './useMedia'
 
-const DESCRIPTION = {
-  movie: 'Film ayrıntıları için kartına tıklayıp özet, oyuncu ve puan bilgisine bakabilirsin.',
-  series: 'Dizi ayrıntıları için kartına tıklayıp sezon ve bölümleri görebilirsin.',
-} as const
+interface Box {
+  top: number
+  left: number
+  width: number
+  height: number
+}
 
 /**
- * The player. It is one element that either fills a large window or docks to the corner, so
- * minimizing keeps the stream playing instead of restarting it.
+ * The one player. It is a single element that is drawn in one of three places, so changing place never restarts the stream:
+ * - inline: over an empty box in the Live TV / Favorites page (no window),
+ * - modal: a large window over the page,
+ * - mini: docked in the corner while you browse.
  */
 export function PlayerOverlay() {
-  const { current, playerMode, minimizePlayer, expandPlayer, stopPlayer, isFavorite, toggleFavorite, lists, prefs, epg, channelNav } = useMedia()
-  const modal = playerMode === 'modal' && current !== null
+  const { current, playerMode, inlineHost, inlineSlot, minimizePlayer, expandPlayer, stopPlayer, prefs, channelNav } = useMedia()
+  const mode = !current || playerMode === 'closed' ? 'closed' : inlineHost ? 'inline' : playerMode
+  const modal = mode === 'modal'
+  const inline = mode === 'inline'
+
+  // Inline: follow the empty box in the page.
+  const [box, setBox] = useState<Box | null>(null)
+  useEffect(() => {
+    if (!inline || !inlineSlot) return
+    const measure = () => {
+      const r = inlineSlot.getBoundingClientRect()
+      setBox((prev) => (prev && prev.top === r.top && prev.left === r.left && prev.width === r.width && prev.height === r.height ? prev : { top: r.top, left: r.left, width: r.width, height: r.height }))
+    }
+    const observer = new ResizeObserver(measure) // also runs once right away
+    observer.observe(inlineSlot)
+    window.addEventListener('resize', measure)
+    window.addEventListener('scroll', measure, true)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+      window.removeEventListener('scroll', measure, true)
+    }
+  }, [inline, inlineSlot, prefs.sidebarCollapsed])
 
   useEffect(() => {
     if (!modal) return
@@ -32,91 +56,60 @@ export function PlayerOverlay() {
     }
   }, [modal, minimizePlayer])
 
-  if (!current || playerMode === 'closed') return null
+  if (!current || mode === 'closed') return null
 
-  const kind = kindOf(current)
-  const fav = isFavorite(current)
+  const player = (
+    <Player
+      channel={current}
+      autoplay={prefs.autoplay}
+      className="rounded-none"
+      compact={mode === 'mini'}
+      onPrev={!(mode === 'mini') && channelNav ? () => channelNav.step(-1) : undefined}
+      onNext={!(mode === 'mini') && channelNav ? () => channelNav.step(1) : undefined}
+      navLabel={channelNav ? `${channelNav.position} / ${channelNav.total}` : undefined}
+      topRight={
+        modal ? (
+          <button
+            type="button"
+            onClick={minimizePlayer}
+            aria-label="Pencereyi kapat ve köşeye küçült"
+            title="Kapat (yayın köşede devam eder)"
+            className="grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        ) : undefined
+      }
+    />
+  )
 
   return (
     <>
       {modal && <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm" onClick={minimizePlayer} aria-hidden="true" />}
 
+      {/* The same element in every mode: only its class and position change. */}
       <div
         role={modal ? 'dialog' : 'complementary'}
         aria-modal={modal || undefined}
         aria-label={`Oynatıcı: ${current.name}`}
+        style={inline ? (box ? { position: 'fixed', top: box.top, left: box.left, width: box.width, height: box.height } : { visibility: 'hidden' }) : undefined}
         className={
-          modal
-            ? 'fixed left-1/2 top-1/2 z-50 max-h-[96dvh] w-[min(1100px,96vw,calc((100dvh_-_400px)*1.7778))] min-w-[min(96vw,360px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/15 bg-elev shadow-2xl'
-            : 'fixed bottom-[4.5rem] right-3 z-40 w-64 overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl sm:w-80 lg:bottom-5 lg:right-5'
+          inline
+            ? 'fixed z-20 overflow-hidden rounded-2xl border border-white/10 bg-black shadow-xl'
+            : modal
+              ? 'fixed left-1/2 top-1/2 z-50 max-h-[96dvh] w-[min(1100px,96vw,calc((100dvh_-_400px)*1.7778))] min-w-[min(96vw,360px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/15 bg-elev shadow-2xl'
+              : 'fixed bottom-[4.5rem] right-3 z-40 w-64 overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl sm:w-80 lg:bottom-5 lg:right-5'
         }
       >
-        <Player
-          channel={current}
-          autoplay={prefs.autoplay}
-          className="rounded-none"
-          compact={!modal}
-          onPrev={modal && channelNav ? () => channelNav.step(-1) : undefined}
-          onNext={modal && channelNav ? () => channelNav.step(1) : undefined}
-          navLabel={channelNav ? `${channelNav.position} / ${channelNav.total}` : undefined}
-          topRight={
-            modal ? (
-              <button
-                type="button"
-                onClick={minimizePlayer}
-                aria-label="Pencereyi kapat ve köşeye küçült"
-                title="Kapat (yayın köşede devam eder)"
-                className="grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white/90 hover:bg-black/75 hover:text-white"
-              >
-                <X size={20} />
-              </button>
-            ) : undefined
-          }
-        />
+        {player}
 
-        {modal ? (
-          <>
-            <div className="p-5 sm:p-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold tracking-wider text-[var(--accent-ink)]">{KIND_BADGE[kind]}</span>
-                <span className="truncate text-xs text-[var(--subtle)]">
-                  {groupOf(current)}
-                  {lists.active ? ` · ${lists.active.name}` : ''}
-                </span>
-              </div>
-              <h2 className="display mt-2 text-balance text-2xl font-semibold sm:text-3xl">{current.name}</h2>
-              {current.subtitle && <p className="mt-1 text-sm font-medium text-accent">{current.subtitle}</p>}
-              {kind === 'live' ? (
-                <EpgTimeline channel={current} epg={epg} />
-              ) : (
-                <p className="mt-1.5 line-clamp-3 max-w-3xl text-pretty text-sm text-[var(--subtle)]">{current.description ?? DESCRIPTION[kind]}</p>
-              )}
+        {modal && (
+          <div className="p-5 sm:p-6">
+            <NowPlayingInfo channel={current} windowed />
+          </div>
+        )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {channelNav && (
-                  <>
-                    <button type="button" onClick={() => channelNav.step(-1)} className="btn-ghost">
-                      <SkipBack size={16} aria-hidden="true" /> Önceki kanal
-                    </button>
-                    <button type="button" onClick={() => channelNav.step(1)} className="btn-ghost">
-                      Sonraki kanal <SkipForward size={16} aria-hidden="true" />
-                    </button>
-                  </>
-                )}
-                <button type="button" onClick={() => toggleFavorite(current)} aria-pressed={fav} className={`btn-ghost ${fav ? '!border-accent !text-accent' : ''}`}>
-                  <Heart size={16} fill={fav ? 'currentColor' : 'none'} aria-hidden="true" />
-                  {fav ? 'Favorilerde' : 'Favorilere ekle'}
-                </button>
-                <button type="button" onClick={minimizePlayer} className="btn-ghost">
-                  <Minimize2 size={16} aria-hidden="true" /> Küçült
-                </button>
-                <button type="button" onClick={stopPlayer} className="btn-ghost hover:!text-danger">
-                  <Power size={16} aria-hidden="true" /> Yayını kapat
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
+        {mode === 'mini' && (
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/80 to-transparent p-2">
             <p className="min-w-0 flex-1 truncate pl-1 pt-1.5 text-xs font-medium text-white/90">{current.name}</p>
             <div className="pointer-events-auto flex shrink-0 gap-1">

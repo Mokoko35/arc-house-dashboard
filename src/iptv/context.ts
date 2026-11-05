@@ -52,6 +52,11 @@ export interface Media {
   /** Starts a channel, film or episode in the large player window. */
   play: (channel: Channel) => void
   playerMode: PlayerMode
+  /** True on Live TV and Favorites when the window is wide enough: the player sits in the page instead of a window. */
+  inlineHost: boolean
+  /** The empty box in the page that the inline player is drawn over. */
+  inlineSlot: HTMLElement | null
+  setInlineSlot: (el: HTMLElement | null) => void
   /** Shrinks the player to the corner so you can keep browsing while it plays. */
   minimizePlayer: () => void
   expandPlayer: () => void

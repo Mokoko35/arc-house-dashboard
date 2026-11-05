@@ -7,6 +7,7 @@ import { type Favorites, favKey, loadFavorites, saveFavorites } from './storage'
 import type { Channel } from './types'
 import { usePlaylists } from './usePlaylists'
 import { useCatalog } from './useCatalog'
+import { useMediaQuery } from './useMediaQuery'
 import { useEpg } from './useEpg'
 import { isAdult } from './adult'
 import { type CountryCount, NO_COUNTRY, countryOf } from './countries'
@@ -30,6 +31,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState<{ playlistId: string | null; channel: Channel } | null>(null)
   const [detail, setDetail] = useState<Channel | null>(null)
   const [queue, setQueue] = useState<Channel[]>([])
+  const [inlineSlot, setInlineSlot] = useState<HTMLElement | null>(null)
   const [adding, setAdding] = useState(false)
   const [managing, setManaging] = useState<Kind | null>(null)
 
@@ -156,12 +158,17 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     [active],
   )
 
+  // On Live TV and Favorites the player lives in the page (no window). Elsewhere it opens as a window.
+  const wide = useMediaQuery('(min-width: 1024px)')
+  const inlineHost = wide && (route.page === 'live' || route.page === 'favorites')
+
   const play = useCallback(
     (c: Channel) => {
       setPlaying({ playlistId: active?.id ?? null, channel: c })
-      setPlayerMode('modal')
+      // "mini" is what it becomes when you leave an in-page player behind: it keeps playing in the corner.
+      setPlayerMode(inlineHost ? 'mini' : 'modal')
     },
-    [active],
+    [active, inlineHost],
   )
 
   const openItem = useCallback(
@@ -224,6 +231,9 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     channelNav,
     current,
     playerMode,
+    inlineHost,
+    inlineSlot,
+    setInlineSlot,
     minimizePlayer: () => setPlayerMode((m) => (m === 'modal' ? 'mini' : m)),
     expandPlayer: () => setPlayerMode((m) => (m === 'mini' ? 'modal' : m)),
     stopPlayer: () => {

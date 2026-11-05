@@ -2,7 +2,9 @@ import { AddPlaylistDialog } from './iptv/AddPlaylistDialog'
 import { ActivityPill } from './iptv/ActivityPill'
 import { BrowsePage } from './iptv/BrowsePage'
 import { DetailDialog } from './iptv/DetailDialog'
+import { FavoritesPage } from './iptv/FavoritesPage'
 import { HomePage } from './iptv/HomePage'
+import { LivePage } from './iptv/LivePage'
 import { ManageCategoriesModal } from './iptv/ManageCategoriesModal'
 import { PlayerOverlay } from './iptv/PlayerOverlay'
 import { Splash } from './iptv/Splash'
@@ -30,9 +32,10 @@ function Shell() {
             </p>
           )}
           {route.page === 'home' && <HomePage />}
-          {route.page === 'live' && <BrowsePage kind="live" />}
+          {route.page === 'live' && <LivePage />}
           {route.page === 'movies' && <BrowsePage kind="movie" />}
           {route.page === 'series' && <BrowsePage kind="series" />}
+          {route.page === 'favorites' && <FavoritesPage />}
           {route.page === 'settings' && <SettingsPage />}
         </main>
       </div>

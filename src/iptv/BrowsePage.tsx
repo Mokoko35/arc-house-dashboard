@@ -1,11 +1,13 @@
-import { useDeferredValue, useMemo, useState } from 'react'
-import { ChevronRight, LayoutGrid, List, ListPlus, Search, SlidersHorizontal, X } from 'lucide-react'
+import { Breadcrumb } from './Breadcrumb'
+import { Empty } from './EmptyState'
+import { useCategoryBrowse } from './useCategoryBrowse'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { CategoryChips, CategorySidebar } from './CategoryRail'
 import { CountrySelect } from './CountrySelect'
-import { countryOfGroup, flagOf } from './countries'
+import { flagOf } from './countries'
 import type { Channel } from './types'
-import { ChannelCard, ChannelRow, PosterCard } from './Cards'
-import { FAVORITES, KIND_LABEL, type Kind, categoriesOf, categoryCrumbs, groupOf, sortByOrder } from './kinds'
+import { ChannelCard, PosterCard } from './Cards'
+import { FAVORITES, KIND_LABEL, type Kind } from './kinds'
 import type { CardSize } from './prefs'
 import { ProgressiveGrid } from './ProgressiveGrid'
 import { SkeletonGrid } from './Skeletons'
@@ -29,78 +31,14 @@ const EMPTY_HINT: Record<Kind, string> = {
   series: 'Bu listede dizi bulunamadı. Diziler çoğunlukla Xtream portal listelerinde bulunur.',
 }
 
-function Empty({ icon, children }: { icon: 'add' | 'manage' | 'none'; children: React.ReactNode }) {
-  const { openAdd } = useMedia()
-  return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-white/15 px-6 py-16 text-center">
-      <div className="max-w-sm text-sm text-[var(--subtle)]">
-        {children}
-        {icon === 'add' && (
-          <div className="mt-4">
-            <button type="button" onClick={openAdd} className="btn-primary">
-              <ListPlus size={16} aria-hidden="true" /> Liste ekle
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/** "Canlı TV > TR > Disney+": where you are. Lives in the page, so it stays visible whether or not the menu is collapsed. */
-function Breadcrumb({ kind, selected }: { kind: Kind; selected: string }) {
-  const trail = [KIND_LABEL[kind], ...(selected === '' ? ['Tümü'] : selected === FAVORITES ? ['Favoriler'] : categoryCrumbs(selected))]
-  return (
-    <nav aria-label="Bulunduğun yer" className="min-w-0">
-      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xl font-semibold sm:text-2xl">
-        {trail.map((crumb, i) => {
-          const last = i === trail.length - 1
-          return (
-            <li key={`${i}-${crumb}`} className="flex min-w-0 items-center gap-1">
-              {i > 0 && <ChevronRight size={18} className="shrink-0 text-[var(--subtle)]" aria-hidden="true" />}
-              <span className={`display truncate ${last ? 'text-accent' : 'text-[var(--ink-2)]'}`} aria-current={last ? 'page' : undefined}>
-                {crumb}
-              </span>
-            </li>
-          )
-        })}
-      </ol>
-    </nav>
-  )
-}
-
 export function BrowsePage({ kind }: { kind: Kind }) {
-  const { lists, parts, visible, prefs, current, openItem, isFavorite, toggleFavorite, openManage, catalog, xtream, epg, activeCountries, setCountries, orderFor, updatePrefs } = useMedia()
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('')
-  const deferred = useDeferredValue(query)
-
-  const base = visible[kind]
-  const order = orderFor(kind)
-  const categories = useMemo(() => sortByOrder(categoriesOf(base), order), [base, order])
-  const favoriteCount = useMemo(() => base.filter((c) => isFavorite(c)).length, [base, isFavorite])
-  const selected = category === '' || category === FAVORITES || categories.some((c) => c.name === category) ? category : ''
-
-  const items = useMemo(() => {
-    const q = deferred.trim().toLocaleLowerCase('tr')
-    return base.filter((c) => {
-      if (selected === FAVORITES ? !isFavorite(c) : selected !== '' && groupOf(c) !== selected) return false
-      return !q || c.name.toLocaleLowerCase('tr').includes(q)
-    })
-  }, [base, selected, deferred, isFavorite])
+  const { lists, parts, prefs, current, openItem, isFavorite, toggleFavorite, openManage, catalog, xtream, epg, activeCountries, setCountries } = useMedia()
+  const { base, items, rail, selected, query, setQuery, deferred } = useCategoryBrowse(kind)
 
   const poster = kind !== 'live'
-  const listView = kind === 'live' && prefs.liveView === 'list'
-  const gridClass = poster ? POSTER_GRID[prefs.cardSize] : listView ? 'flex flex-col gap-2' : LIVE_GRID[prefs.cardSize]
+  const gridClass = poster ? POSTER_GRID[prefs.cardSize] : LIVE_GRID[prefs.cardSize]
   const hasAny = parts[kind].length > 0
   const showRail = !lists.starting && lists.playlists.length > 0 && hasAny && base.length > 0
-  // While a country is picked, categories without a country go under "Diğer" instead of disappearing.
-  const otherNames = useMemo(
-    () => (activeCountries.length > 0 ? new Set(categories.filter((c) => countryOfGroup(c.name) === null).map((c) => c.name)) : undefined),
-    [activeCountries, categories],
-  )
-  const rail = { categories, total: base.length, favoriteCount, selected, onSelect: setCategory, onManage: () => openManage(kind), otherNames }
-
   return (
     <div className="lg:-mx-8 lg:-mb-16 lg:-mt-8 lg:flex lg:min-h-dvh">
       {showRail && <CategorySidebar {...rail} />}
@@ -123,23 +61,6 @@ export function BrowsePage({ kind }: { kind: Kind }) {
                 )}
               </p>
             </div>
-            {hasAny && kind === 'live' && (
-              <div role="group" aria-label="Görünüm" className="flex rounded-xl border border-white/10 bg-white/[0.04] p-1">
-                {([['grid', 'Izgara', LayoutGrid], ['list', 'Liste', List]] as const).map(([mode, label, Icon]) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    aria-pressed={prefs.liveView === mode}
-                    aria-label={`${label} görünümü`}
-                    title={`${label} görünümü`}
-                    onClick={() => updatePrefs({ liveView: mode })}
-                    className={`grid h-9 w-10 place-items-center rounded-lg transition ${prefs.liveView === mode ? 'bg-accent text-[var(--accent-ink)]' : 'text-[var(--subtle)] hover:text-[var(--ink)]'}`}
-                  >
-                    <Icon size={17} aria-hidden="true" />
-                  </button>
-                ))}
-              </div>
-            )}
             {hasAny && (
               <div className="relative w-full sm:w-72">
                 <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--subtle)]" aria-hidden="true" />
@@ -203,14 +124,13 @@ export function BrowsePage({ kind }: { kind: Kind }) {
             </Empty>
           ) : (
             <ProgressiveGrid
-              key={`${selected}|${deferred}|${prefs.cardSize}|${listView}`}
+              key={`${selected}|${deferred}|${prefs.cardSize}`}
               items={items}
               className={gridClass}
               getKey={(c) => c.id}
               render={(c) => {
                 const props = { channel: c, active: current?.id === c.id, favorite: isFavorite(c), showLogo: prefs.showLogos, onPlay: (ch: Channel) => openItem(ch, kind === 'live' ? items : undefined), onFavorite: toggleFavorite }
-                if (poster) return <PosterCard {...props} />
-                return listView ? <ChannelRow {...props} epg={epg.nowNext(c)} /> : <ChannelCard {...props} epg={epg.nowNext(c)} />
+                return poster ? <PosterCard {...props} /> : <ChannelCard {...props} epg={epg.nowNext(c)} />
               }}
             />
           )}

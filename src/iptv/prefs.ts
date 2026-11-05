@@ -3,7 +3,6 @@ import { DEFAULT_THEME, THEMES, type ThemeId } from './themes'
 
 export type CardSize = 'sm' | 'md' | 'lg'
 export type EpgRefresh = 'off' | '6' | '12' | '24'
-export type LiveView = 'grid' | 'list'
 
 export interface Prefs {
   theme: ThemeId
@@ -15,8 +14,6 @@ export interface Prefs {
   sidebarCollapsed: boolean
   showLogos: boolean
   cardSize: CardSize
-  /** Live TV as cards or as rows with the program guide. */
-  liveView: LiveView
   autoplay: boolean
   bufferSeconds: 10 | 30 | 60
   hardwareDecoding: boolean
@@ -31,7 +28,6 @@ export const DEFAULT_PREFS: Prefs = {
   sidebarCollapsed: false,
   showLogos: true,
   cardSize: 'md',
-  liveView: 'grid',
   autoplay: true,
   bufferSeconds: 30,
   hardwareDecoding: true,
@@ -57,7 +53,6 @@ export function loadPrefs(): Prefs {
       sidebarCollapsed: typeof raw.sidebarCollapsed === 'boolean' ? raw.sidebarCollapsed : d.sidebarCollapsed,
       showLogos: typeof raw.showLogos === 'boolean' ? raw.showLogos : d.showLogos,
       cardSize: raw.cardSize === 'sm' || raw.cardSize === 'md' || raw.cardSize === 'lg' ? raw.cardSize : d.cardSize,
-      liveView: raw.liveView === 'list' || raw.liveView === 'grid' ? raw.liveView : d.liveView,
       autoplay: typeof raw.autoplay === 'boolean' ? raw.autoplay : d.autoplay,
       bufferSeconds: raw.bufferSeconds === 10 || raw.bufferSeconds === 30 || raw.bufferSeconds === 60 ? raw.bufferSeconds : d.bufferSeconds,
       hardwareDecoding: typeof raw.hardwareDecoding === 'boolean' ? raw.hardwareDecoding : d.hardwareDecoding,

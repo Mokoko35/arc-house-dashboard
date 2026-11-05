@@ -1,4 +1,4 @@
-import { Clapperboard, Home, Library, ListPlus, Menu, Settings, Tv } from 'lucide-react'
+import { Clapperboard, Heart, Home, Library, ListPlus, Menu, Settings, Tv } from 'lucide-react'
 import { hrefFor, type Page } from './router'
 import { useMedia } from './useMedia'
 
@@ -7,6 +7,7 @@ const ITEMS: { page: Page; label: string; icon: typeof Home }[] = [
   { page: 'live', label: 'Canlı TV', icon: Tv },
   { page: 'movies', label: 'Filmler', icon: Clapperboard },
   { page: 'series', label: 'Diziler', icon: Library },
+  { page: 'favorites', label: 'Favoriler', icon: Heart },
   { page: 'settings', label: 'Ayarlar', icon: Settings },
 ]
 
@@ -91,7 +92,7 @@ export function Sidebar() {
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/10 bg-nav/95 backdrop-blur lg:hidden" aria-label="Ana menü">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-white/10 bg-nav/95 backdrop-blur lg:hidden" aria-label="Ana menü">
         {ITEMS.map(({ page, label, icon: Icon }) => {
           const on = route.page === page
           return (
