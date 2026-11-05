@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDownAZ, Check, ChevronUp, ChevronsUp, Search, X } from 'lucide-react'
 import { KIND_LABEL, type Kind, categoriesOf, sortByOrder } from './kinds'
 import { useMedia } from './useMedia'
@@ -7,7 +7,13 @@ import { useMedia } from './useMedia'
 function ModalBody({ kind }: { kind: Kind }) {
   // Always the full list, never narrowed by the country filter, so saving cannot lose categories you cannot see here.
   const { allParts, hiddenFor, setHiddenFor, orderFor, setOrderFor, closeManage } = useMedia()
-  const [names, setNames] = useState<string[]>(() => sortByOrder(categoriesOf(allParts[kind]), orderFor(kind)).map((c) => c.name))
+  // `domOrder` never changes, so React never moves rows around in the page. The order you arrange is drawn with CSS `order`,
+  // which keeps the scroll position and the focused button exactly where they were.
+  const [domOrder] = useState<string[]>(() => sortByOrder(categoriesOf(allParts[kind]), orderFor(kind)).map((c) => c.name))
+  const [names, setNames] = useState<string[]>(domOrder)
+  const rank = useMemo(() => new Map(names.map((n, i) => [n, i])), [names])
+  const scroller = useRef<HTMLUListElement>(null)
+  const pinned = useRef<number | null>(null)
   const counts = useMemo(() => new Map(categoriesOf(allParts[kind]).map((c) => [c.name, c.count])), [allParts, kind])
   const [hidden, setHidden] = useState<Set<string>>(() => new Set(hiddenFor(kind)))
   const [query, setQuery] = useState('')
@@ -24,6 +30,7 @@ function ModalBody({ kind }: { kind: Kind }) {
   const q = query.trim().toLocaleLowerCase('tr')
   const matches = (name: string) => !q || name.toLocaleLowerCase('tr').includes(q)
   const shown = names.filter(matches)
+  const firstShown = shown[0]
   const visibleCount = names.filter((n) => !hidden.has(n)).length
 
   const toggle = (name: string) =>
@@ -44,6 +51,22 @@ function ModalBody({ kind }: { kind: Kind }) {
       return next
     })
 
+  // Remember where the list is scrolled to, and put it back after the new order is drawn.
+  const pinScroll = () => {
+    pinned.current = scroller.current?.scrollTop ?? null
+  }
+  useLayoutEffect(() => {
+    const top = pinned.current
+    const el = scroller.current
+    if (top === null || !el) return
+    pinned.current = null
+    el.scrollTop = top
+    const frame = requestAnimationFrame(() => {
+      el.scrollTop = top
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [names])
+
   // With a search active, "up" means above the previous category that is on screen.
   const moveUp = (name: string) => {
     const from = names.indexOf(name)
@@ -55,6 +78,7 @@ function ModalBody({ kind }: { kind: Kind }) {
       }
     }
     if (from < 0 || to < 0) return
+    pinScroll()
     const next = names.filter((n) => n !== name)
     next.splice(to, 0, name)
     setNames(next)
@@ -63,6 +87,7 @@ function ModalBody({ kind }: { kind: Kind }) {
 
   const moveTop = (name: string) => {
     if (names[0] === name) return
+    pinScroll()
     setNames([name, ...names.filter((n) => n !== name)])
     setNote(`${name} en üste taşındı`)
   }
@@ -122,16 +147,16 @@ function ModalBody({ kind }: { kind: Kind }) {
           </div>
         </div>
 
-        <ul className="min-h-0 flex-1 overflow-y-auto border-y border-white/10 px-2 py-1" aria-label="Kategoriler">
+        <ul ref={scroller} className="flex min-h-0 flex-1 flex-col overflow-y-auto border-y border-white/10 px-2 py-1 [overflow-anchor:none]" aria-label="Kategoriler">
           {names.length === 0 ? (
             <li className="p-6 text-center text-sm text-[var(--subtle)]">Bu türde kategori yok.</li>
           ) : shown.length === 0 ? (
             <li className="p-6 text-center text-sm text-[var(--subtle)]">Eşleşen kategori yok.</li>
           ) : (
-            shown.map((name, i) => {
+            domOrder.map((name) => {
               const on = !hidden.has(name)
               return (
-                <li key={name} className="flex items-center gap-1">
+                <li key={name} style={{ order: rank.get(name) ?? 0 }} className={matches(name) ? 'flex items-center gap-1' : 'hidden'}>
                   <label className="flex min-h-12 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-xl px-3 hover:bg-white/5">
                     <input type="checkbox" checked={on} onChange={() => toggle(name)} className="peer sr-only" />
                     <span
@@ -145,7 +170,7 @@ function ModalBody({ kind }: { kind: Kind }) {
                     <span className={`min-w-0 flex-1 truncate text-sm ${on ? 'text-[var(--ink-2)]' : 'text-[var(--subtle)]'}`}>{name}</span>
                     <span className="shrink-0 text-xs tabular-nums text-[var(--subtle)]">{(counts.get(name) ?? 0).toLocaleString('tr-TR')}</span>
                   </label>
-                  <button type="button" onClick={() => moveUp(name)} disabled={i === 0} aria-label={`${name} bir yukarı taşı`} title="Yukarı taşı" className={iconButton}>
+                  <button type="button" onClick={() => moveUp(name)} disabled={firstShown === name} aria-label={`${name} bir yukarı taşı`} title="Yukarı taşı" className={iconButton}>
                     <ChevronUp size={18} />
                   </button>
                   <button type="button" onClick={() => moveTop(name)} disabled={names[0] === name} aria-label={`${name} en üste taşı`} title="En üste taşı" className={iconButton}>

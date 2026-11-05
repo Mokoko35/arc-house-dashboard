@@ -1,6 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Loader2, Maximize, Minimize, Pause, Play, SkipBack, SkipForward, Tv, Volume2, VolumeX } from 'lucide-react'
-import { Artwork } from './Cards'
 import type { Channel } from './types'
 
 type Engine = 'hls' | 'ts' | 'native'
@@ -54,7 +53,10 @@ function ControlButton({ label, onClick, children, className = '' }: { label: st
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
       aria-label={label}
       title={label}
       className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/90 transition hover:bg-white/15 hover:text-white ${className}`}
@@ -68,8 +70,12 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
   const videoRef = useRef<HTMLVideoElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const hideTimer = useRef<number | undefined>(undefined)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Status belongs to one stream address. A new channel starts as "loading" without remounting the player,
+  // which is what keeps full screen alive when you change channels.
+  const [status, setStatus] = useState<{ url: string; loading: boolean; error: string | null } | null>(null)
+  const own = status?.url === channel.url ? status : null
+  const loading = own ? own.loading : true
+  const error = own ? own.error : null
   const [paused, setPaused] = useState(true)
   const [{ volume, muted }, setSound] = useState(loadVolume)
   const [time, setTime] = useState(0)
@@ -101,18 +107,23 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     video.volume = volume
     video.muted = muted
 
+    const url = channel.url
+    const patch = (p: { loading?: boolean; error?: string | null }) =>
+      setStatus((prev) => ({ ...(prev?.url === url ? prev : { url, loading: true, error: null }), ...p }))
     const fail = (message: string) => {
-      if (!disposed) {
-        setError(message)
-        setLoading(false)
-      }
+      if (!disposed) patch({ error: message, loading: false })
     }
-    const onPlaying = () => {
-      setLoading(false)
-      setError(null)
+    const onPlaying = () => patch({ loading: false, error: null })
+    const onWaiting = () => patch({ loading: true })
+    // Emptying the element when a channel is swapped can raise an error with no cause; only a real one counts.
+    const onNativeError = () => {
+      if (video.error) fail('Bu yayın oynatılamadı. Adres geçersiz olabilir veya kodek tarayıcıda desteklenmiyor.')
     }
-    const onWaiting = () => setLoading(true)
-    const onNativeError = () => fail('Bu yayın oynatılamadı. Adres geçersiz olabilir veya kodek tarayıcıda desteklenmiyor.')
+    const onEmptied = () => {
+      setTime(0)
+      setDuration(0)
+      setPaused(video.paused)
+    }
     const onPlay = () => setPaused(false)
     const onPause = () => setPaused(true)
     const onTime = () => setTime(video.currentTime)
@@ -124,6 +135,7 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     video.addEventListener('pause', onPause)
     video.addEventListener('timeupdate', onTime)
     video.addEventListener('durationchange', onDuration)
+    video.addEventListener('emptied', onEmptied)
 
     const start = async () => {
       const engine = engineFor(channel.url)
@@ -182,6 +194,7 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
       video.removeEventListener('pause', onPause)
       video.removeEventListener('timeupdate', onTime)
       video.removeEventListener('durationchange', onDuration)
+      video.removeEventListener('emptied', onEmptied)
       teardown?.()
       video.removeAttribute('src')
       video.load()
@@ -287,9 +300,6 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
           {/* Top: the channel's logo and name, plus the window buttons. */}
           <div className={`absolute inset-x-0 top-0 flex items-start justify-between gap-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent p-3 pb-10 transition-opacity duration-300 sm:p-4 sm:pb-12 ${show ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
             <div className="flex min-w-0 items-center gap-3">
-              <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-white/20 sm:h-12 sm:w-12">
-                <Artwork channel={channel} showLogo fit="contain" />
-              </span>
               <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-white drop-shadow sm:text-lg">{channel.name}</p>
                 {channel.subtitle && <p className="truncate text-sm text-white/75">{channel.subtitle}</p>}
@@ -392,6 +402,6 @@ export function Player({ channel, autoplay = true, className = 'rounded-2xl bord
       </div>
     )
   }
-  // The key remounts the player for each channel, which resets loading and error state.
-  return <PlayerCore key={channel.id} channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} />
+  // No key on purpose: the same <video> and wrapper stay mounted for every channel, so full screen survives a channel change.
+  return <PlayerCore channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} />
 }
