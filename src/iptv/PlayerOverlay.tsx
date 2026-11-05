@@ -80,6 +80,7 @@ export function PlayerOverlay() {
       autoplay={prefs.autoplay}
       className="rounded-none"
       compact={mode === 'mini'}
+      transcode={prefs.transcode}
       wantFullscreen={fullscreenPending}
       onFullscreenHandled={fullscreenHandled}
       onPrev={!(mode === 'mini') && channelNav ? () => channelNav.step(-1) : undefined}

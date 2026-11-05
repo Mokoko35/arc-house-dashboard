@@ -13,6 +13,7 @@
     "desktop:build": "vite build && electron-builder --win --x64"
   },
   "dependencies": {
+    "ffmpeg-static": "^5.3.0",
     "hls.js": "^1.7.4",
     "lucide-react": "^0.468.0",
     "mpegts.js": "^1.8.2",
@@ -37,7 +38,8 @@
   "main": "electron/main.mjs",
   "description": "IPTV player for Windows (desktop app) and the browser. Add M3U or Xtream lists and watch live TV, movies and series.",
   "trustedDependencies": [
-    "electron"
+    "electron",
+    "ffmpeg-static"
   ],
   "build": {
     "appId": "io.arcstudio.iptvplayer",
@@ -48,7 +50,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/ffmpeg-static/**/*"
     ],
     "win": {
       "target": "nsis"
@@ -56,6 +59,9 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ]
   }
 }

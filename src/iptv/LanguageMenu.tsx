@@ -10,6 +10,8 @@ interface Props {
   onSubtitleFile: (file: File) => void
   /** Lets the player keep its controls on screen while the menu is open. */
   onOpenChange: (open: boolean) => void
+  /** A line under "Altyazı", for example while the subtitle files are still being prepared. */
+  subtitleNote?: string
 }
 
 function Row({ on, onClick, children }: { on: boolean; onClick: () => void; children: string }) {
@@ -36,7 +38,7 @@ function Row({ on, onClick, children }: { on: boolean; onClick: () => void; chil
  * One menu for the audio language and the subtitles. It is always there, so there is always a place to look:
  * when the file's own tracks cannot be read it says so, and a subtitle file can still be added by hand.
  */
-export function LanguageMenu({ tracks, onAudio, onSubtitle, onSubtitleFile, onOpenChange }: Props) {
+export function LanguageMenu({ tracks, onAudio, onSubtitle, onSubtitleFile, onOpenChange, subtitleNote }: Props) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   const picker = useRef<HTMLInputElement>(null)
@@ -100,6 +102,7 @@ export function LanguageMenu({ tracks, onAudio, onSubtitle, onSubtitleFile, onOp
           {audioNote && <p className="px-3 pb-2 text-xs leading-relaxed text-[var(--subtle)]">{audioNote}</p>}
 
           <p className="label px-3 pb-1 pt-3">Altyazı</p>
+          {subtitleNote && <p className="px-3 pb-1 text-xs leading-relaxed text-[var(--subtle)]">{subtitleNote}</p>}
           <Row on={tracks.subIndex < 0} onClick={() => onSubtitle(-1)}>
             Kapalı
           </Row>
