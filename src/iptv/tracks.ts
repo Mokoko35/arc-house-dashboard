@@ -12,9 +12,11 @@ export interface TrackInfo {
   subs: TrackOption[]
   /** Index of the subtitle track showing, or -1 when subtitles are off. */
   subIndex: number
+  /** Whether this player can read audio tracks at all (HLS, or a browser that exposes `audioTracks`). */
+  audioSupported: boolean
 }
 
-export const EMPTY_TRACKS: TrackInfo = { audio: [], audioIndex: -1, subs: [], subIndex: -1 }
+export const EMPTY_TRACKS: TrackInfo = { audio: [], audioIndex: -1, subs: [], subIndex: -1, audioSupported: false }
 
 let names: Intl.DisplayNames | null | undefined
 
@@ -55,16 +57,25 @@ export function srtToVtt(srt: string): string {
   return `WEBVTT\n\n${body}\n`
 }
 
-/** Downloads a subtitle file and returns a blob address the video can use, as WebVTT. Throws when it cannot be read. */
-export async function loadSubtitle(url: string): Promise<string> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-  if (!res.ok) throw new Error(`Altyazı ${res.status}`)
-  const buf = await res.arrayBuffer()
+/** Subtitle file bytes to a blob address the video can use, as WebVTT. */
+function subtitleBlob(buf: ArrayBuffer): string {
   let text = new TextDecoder('utf-8').decode(buf)
   // Turkish subtitle files are often Windows-1254, which UTF-8 turns into replacement characters.
   if (text.includes('\uFFFD')) text = new TextDecoder('windows-1254').decode(buf)
   const vtt = /^\uFEFF?\s*WEBVTT/.test(text) ? text : srtToVtt(text)
   return URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }))
+}
+
+/** Downloads a subtitle file. Throws when it cannot be read. */
+export async function loadSubtitle(url: string): Promise<string> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
+  if (!res.ok) throw new Error(`Altyazı ${res.status}`)
+  return subtitleBlob(await res.arrayBuffer())
+}
+
+/** A subtitle file the user picked from their computer. */
+export async function subtitleFromFile(file: File): Promise<string> {
+  return subtitleBlob(await file.arrayBuffer())
 }
 
 type Rec = Record<string, unknown>

@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
+// Chromium keeps `video.audioTracks` (the audio languages inside an .mkv/.mp4) behind a switch. The player's language menu needs it.
+app.commandLine.appendSwitch('enable-blink-features', 'AudioVideoTracks')
+
 const DEV = process.argv.includes('--dev')
 const DEV_URL = 'http://localhost:5173'
 

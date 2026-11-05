@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Captions, Loader2, Maximize, Minimize, Pause, Play, SkipBack, SkipForward, Speaker, Tv, Volume2, VolumeX } from 'lucide-react'
-import { TrackMenu } from './TrackMenu'
-import { EMPTY_TRACKS, type TrackInfo, labelFor, loadSubtitle } from './tracks'
+import { AlertTriangle, Loader2, Maximize, Minimize, Pause, Play, SkipBack, SkipForward, Tv, Volume2, VolumeX } from 'lucide-react'
+import { LanguageMenu } from './LanguageMenu'
+import { EMPTY_TRACKS, type TrackInfo, labelFor, loadSubtitle, subtitleFromFile } from './tracks'
 import type { Channel } from './types'
 
 type Engine = 'hls' | 'ts' | 'native'
@@ -22,13 +22,17 @@ interface NativeAudioList {
 const nativeAudio = (video: HTMLVideoElement): NativeAudioList | undefined => (video as unknown as { audioTracks?: NativeAudioList }).audioTracks
 const textTracksOf = (video: HTMLVideoElement): TextTrack[] => Array.from(video.textTracks).filter((t) => t.kind === 'subtitles' || t.kind === 'captions')
 
-function readTracks(video: HTMLVideoElement, hls: HlsInstance | null): TrackInfo {
+/** `extras` are the subtitle files added by hand or listed by the portal (<track> elements we created). */
+function readTracks(video: HTMLVideoElement, hls: HlsInstance | null, extras: HTMLTrackElement[]): TrackInfo {
   if (hls) {
+    const own = hls.subtitleTracks
+    const extraShowing = extras.findIndex((el) => el.track.mode === 'showing')
     return {
       audio: hls.audioTracks.map((t, i) => ({ label: labelFor(t.name, t.lang, `Ses ${i + 1}`) })),
       audioIndex: hls.audioTrack,
-      subs: hls.subtitleTracks.map((t, i) => ({ label: labelFor(t.name, t.lang, `Altyazı ${i + 1}`) })),
-      subIndex: hls.subtitleTrack,
+      audioSupported: true,
+      subs: [...own.map((t, i) => ({ label: labelFor(t.name, t.lang, `Altyazı ${i + 1}`) })), ...extras.map((el, i) => ({ label: el.label || `Altyazı ${own.length + i + 1}` }))],
+      subIndex: hls.subtitleTrack >= 0 ? hls.subtitleTrack : extraShowing >= 0 ? own.length + extraShowing : -1,
     }
   }
   const audio: TrackInfo['audio'] = []
@@ -44,6 +48,7 @@ function readTracks(video: HTMLVideoElement, hls: HlsInstance | null): TrackInfo
   return {
     audio,
     audioIndex,
+    audioSupported: list !== undefined,
     subs: texts.map((t, i) => ({ label: labelFor(t.label, t.language, `Altyazı ${i + 1}`) })),
     subIndex: texts.findIndex((t) => t.mode === 'showing'),
   }
@@ -135,6 +140,7 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
   const [awake, setAwake] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
   const hlsRef = useRef<HlsInstance | null>(null)
+  const extrasRef = useRef<{ el: HTMLTrackElement; url: string }[]>([])
   const [tracks, setTracks] = useState<TrackInfo>(EMPTY_TRACKS)
   const [menuOpen, setMenuOpen] = useState(false)
   const blocked = mixedContent(channel.url)
@@ -174,7 +180,7 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     const onNativeError = () => {
       if (video.error) fail('Bu yayın oynatılamadı. Adres geçersiz olabilir veya kodek tarayıcıda desteklenmiyor.')
     }
-    const refreshTracks = () => setTracks(readTracks(video, hlsRef.current))
+    const refreshTracks = () => setTracks(readTracks(video, hlsRef.current, extrasRef.current.map((x) => x.el)))
     const onEmptied = () => {
       setTracks(EMPTY_TRACKS)
       setTime(0)
@@ -278,13 +284,36 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel.url, blocked, autoplay])
 
-  // Subtitle files the portal lists are downloaded, turned into WebVTT and added as extra subtitle choices (all off to start with).
+  // Subtitle files added by hand or listed by the portal live as <track> elements. They go away with the channel.
+  useEffect(
+    () => () => {
+      for (const { el, url } of extrasRef.current) {
+        el.remove()
+        URL.revokeObjectURL(url)
+      }
+      extrasRef.current = []
+    },
+    [channel.url],
+  )
+
+  const attachTrack = (video: HTMLVideoElement, url: string, label: string, lang?: string): HTMLTrackElement => {
+    const el = document.createElement('track')
+    el.kind = 'subtitles'
+    el.label = label
+    if (lang) el.srclang = lang
+    el.src = url
+    video.appendChild(el)
+    el.track.mode = 'disabled'
+    extrasRef.current.push({ el, url })
+    return el
+  }
+
+  // The portal lists subtitle files: download them, turn SRT into WebVTT, and offer them (all off to start with).
   useEffect(() => {
     const video = videoRef.current
     const sources = channel.subtitleTracks
     if (!video || blocked || !sources || sources.length === 0) return
     let disposed = false
-    const added: { el: HTMLTrackElement; url: string }[] = []
     void (async () => {
       for (const [i, source] of sources.slice(0, 12).entries()) {
         const url = await loadSubtitle(source.url).catch(() => null)
@@ -293,24 +322,15 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
           URL.revokeObjectURL(url)
           continue
         }
-        const el = document.createElement('track')
-        el.kind = 'subtitles'
-        el.label = source.label ?? labelFor(undefined, source.lang, `Altyazı ${i + 1}`)
-        if (source.lang) el.srclang = source.lang
-        el.src = url
-        video.appendChild(el)
-        el.track.mode = 'disabled'
-        added.push({ el, url })
+        attachTrack(video, url, source.label ?? labelFor(undefined, source.lang, `Altyazı ${i + 1}`), source.lang)
       }
-      if (!disposed) setTracks(readTracks(video, hlsRef.current))
+      if (!disposed) setTracks(readTracks(video, hlsRef.current, extrasRef.current.map((x) => x.el)))
     })()
     return () => {
       disposed = true
-      for (const { el, url } of added) {
-        el.remove()
-        URL.revokeObjectURL(url)
-      }
     }
+    // attachTrack only touches refs and the video element.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel.url, channel.subtitleTracks, blocked])
 
   const selectAudio = (index: number) => {
@@ -325,22 +345,42 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
         if (t) t.enabled = i === index
       }
     }
-    setTracks(readTracks(video, hls))
+    setTracks(readTracks(video, hls, extrasRef.current.map((x) => x.el)))
   }
 
+  // -1 is "off". With HLS the playlist's own subtitles come first, then the added files.
   const selectSubtitle = (index: number) => {
     const video = videoRef.current
     if (!video) return
     const hls = hlsRef.current
+    const extras = extrasRef.current.map((x) => x.el)
     if (hls) {
-      hls.subtitleDisplay = index >= 0
-      hls.subtitleTrack = index
+      const own = hls.subtitleTracks.length
+      const fromPlaylist = index >= 0 && index < own
+      hls.subtitleDisplay = fromPlaylist
+      hls.subtitleTrack = fromPlaylist ? index : -1
+      extras.forEach((el, i) => {
+        el.track.mode = index >= own && i === index - own ? 'showing' : 'disabled'
+      })
     } else {
       textTracksOf(video).forEach((t, i) => {
         t.mode = i === index ? 'showing' : 'disabled'
       })
     }
-    setTracks(readTracks(video, hls))
+    setTracks(readTracks(video, hls, extras))
+  }
+
+  // A subtitle file from the user's computer: added and switched on right away.
+  const addSubtitleFile = (file: File) => {
+    const video = videoRef.current
+    if (!video) return
+    void subtitleFromFile(file)
+      .then((url) => {
+        const el = attachTrack(video, url, file.name.replace(/\.[^.]+$/, ''))
+        const hls = hlsRef.current
+        selectSubtitle(hls ? hls.subtitleTracks.length + extrasRef.current.length - 1 : textTracksOf(video).indexOf(el.track))
+      })
+      .catch(() => undefined)
   }
 
   const togglePlay = useCallback(() => {
@@ -538,12 +578,7 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
                   </span>
                 )}
               </div>
-              {trackMenus && tracks.audio.length > 1 && (
-                <TrackMenu icon={<Speaker size={20} aria-hidden="true" />} label="Ses dili" options={tracks.audio} selected={tracks.audioIndex} onSelect={selectAudio} onOpenChange={setMenuOpen} />
-              )}
-              {trackMenus && tracks.subs.length > 0 && (
-                <TrackMenu icon={<Captions size={21} aria-hidden="true" />} label="Altyazı" options={tracks.subs} selected={tracks.subIndex} offLabel="Kapalı" onSelect={selectSubtitle} onOpenChange={setMenuOpen} />
-              )}
+              {trackMenus && <LanguageMenu tracks={tracks} onAudio={selectAudio} onSubtitle={selectSubtitle} onSubtitleFile={addSubtitleFile} onOpenChange={setMenuOpen} />}
               <ControlButton label={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'} onClick={toggleFullscreen}>
                 {fullscreen ? <Minimize size={20} aria-hidden="true" /> : <Maximize size={20} aria-hidden="true" />}
               </ControlButton>
