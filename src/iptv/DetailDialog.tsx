@@ -5,6 +5,7 @@ import { groupOf } from './kinds'
 import { loadErrorText } from './load'
 import type { Channel, XtreamLogin } from './types'
 import { useMedia } from './useMedia'
+import { findTmdb, mergeDetails } from './tmdb'
 import { type Details, type Episode, type SeriesDetails, episodeChannel, getSeriesInfo, getVodInfo, vodIdOf } from './xtreamApi'
 
 type Status = 'loading' | 'ready' | 'error'
@@ -134,19 +135,37 @@ function useFetched<T>(load: (() => Promise<T>) | null): { data?: T; status: Sta
 /* Film                                                                */
 /* ------------------------------------------------------------------ */
 
-function MovieDetail({ channel, login, playlistId }: { channel: Channel; login: XtreamLogin; playlistId: string }) {
-  const { play, closeDetail } = useMedia()
+function MovieDetail({ channel, login, playlistId }: { channel: Channel; login: XtreamLogin | null; playlistId: string | undefined }) {
+  const { play, closeDetail, prefs } = useMedia()
   const vodId = vodIdOf(channel.url)
-  const { data: details, status, error } = useFetched(vodId ? () => getVodInfo(login, playlistId, vodId) : null)
+  const tmdbKey = prefs.tmdbKey
+  const portal = login && playlistId && vodId ? { login, playlistId, vodId } : null
+
+  // The portal's details, then TMDB on top of them when a key is set. TMDB is asked with the cleaned title (and the portal's TMDB id when it has one).
+  const { data: details, status, error } = useFetched<Details>(
+    portal || tmdbKey
+      ? async () => {
+          let failure: unknown
+          const base = portal ? await getVodInfo(portal.login, portal.playlistId, portal.vodId).catch((e: unknown) => ((failure = e), undefined)) : undefined
+          const extra = tmdbKey ? await findTmdb(tmdbKey, 'movie', channel.name, base?.tmdbId).catch(() => null) : null
+          if (!base && !extra) throw failure instanceof Error ? failure : new Error('Bu film için ayrıntı bulunamadı.')
+          return mergeDetails(base, extra)
+        }
+      : null,
+  )
 
   const start = () => {
-    play({
-      ...channel,
-      logo: details?.poster ?? channel.logo,
-      rating: details?.rating ?? channel.rating,
-      description: details?.plot ?? channel.description,
-      subtitle: [details?.year, details?.duration, details?.genre].filter(Boolean).join(' · ') || undefined,
-    })
+    // Opening a film or episode takes the whole screen, like Live TV does.
+    play(
+      {
+        ...channel,
+        logo: details?.poster ?? channel.logo,
+        rating: details?.rating ?? channel.rating,
+        description: details?.plot ?? channel.description,
+        subtitle: [details?.year, details?.duration, details?.genre].filter(Boolean).join(' · ') || undefined,
+      },
+      { fullscreen: true },
+    )
     closeDetail()
   }
 
@@ -211,7 +230,10 @@ function EpisodeRow({ ep, poster, playing, onPlay }: { ep: Episode; poster?: str
 
 function SeriesDetailView({ channel, login, playlistId, seriesId }: { channel: Channel; login: XtreamLogin; playlistId: string; seriesId: string }) {
   const { play, closeDetail, current } = useMedia()
-  const { data, status, error } = useFetched<SeriesDetails>(() => getSeriesInfo(login, playlistId, seriesId))
+  const { prefs } = useMedia()
+  const { data: base, status, error } = useFetched<SeriesDetails>(() => getSeriesInfo(login, playlistId, seriesId))
+  const { data: extra } = useFetched<Details | null>(prefs.tmdbKey ? () => findTmdb(prefs.tmdbKey, 'tv', channel.name).catch(() => null) : null)
+  const data = useMemo(() => (base ? mergeDetails(base, extra) : undefined), [base, extra])
   const [picked, setPicked] = useState<number | null>(null)
 
   const season = picked ?? data?.seasons[0]?.number ?? null
@@ -220,7 +242,7 @@ function SeriesDetailView({ channel, login, playlistId, seriesId }: { channel: C
 
   const playEpisode = (ep: Episode) => {
     const series: Channel = { ...channel, description: data?.plot ?? channel.description }
-    play(episodeChannel(series, ep, data?.poster ?? channel.logo))
+    play(episodeChannel(series, ep, data?.poster ?? channel.logo), { fullscreen: true })
     closeDetail()
   }
 
@@ -308,13 +330,11 @@ function Sheet({ channel }: { channel: Channel }) {
         <button type="button" onClick={closeDetail} aria-label="Kapat" className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-white/80 hover:text-white">
           <X size={18} />
         </button>
-        {xtream && playlistId ? (
-          channel.seriesId ? (
-            <SeriesDetailView channel={channel} login={xtream} playlistId={playlistId} seriesId={channel.seriesId} />
-          ) : (
-            <MovieDetail channel={channel} login={xtream} playlistId={playlistId} />
-          )
-        ) : null}
+        {channel.seriesId ? (
+          xtream && playlistId ? <SeriesDetailView channel={channel} login={xtream} playlistId={playlistId} seriesId={channel.seriesId} /> : null
+        ) : (
+          <MovieDetail channel={channel} login={xtream} playlistId={playlistId} />
+        )}
       </div>
     </div>
   )

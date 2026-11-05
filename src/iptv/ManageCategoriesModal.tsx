@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDownAZ, Check, ChevronUp, ChevronsUp, Search, X } from 'lucide-react'
+import { ArrowDownAZ, Check, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, Search, X } from 'lucide-react'
 import { KIND_LABEL, type Kind, categoriesOf, sortByOrder } from './kinds'
 import { useMedia } from './useMedia'
 
@@ -31,6 +31,7 @@ function ModalBody({ kind }: { kind: Kind }) {
   const matches = (name: string) => !q || name.toLocaleLowerCase('tr').includes(q)
   const shown = names.filter(matches)
   const firstShown = shown[0]
+  const lastShown = shown[shown.length - 1]
   const visibleCount = names.filter((n) => !hidden.has(n)).length
 
   const toggle = (name: string) =>
@@ -85,6 +86,31 @@ function ModalBody({ kind }: { kind: Kind }) {
     setNote(`${name} yukarı taşındı: ${to + 1}. sıra`)
   }
 
+  // With a search active, "down" means below the next category that is on screen.
+  const moveDown = (name: string) => {
+    const from = names.indexOf(name)
+    let to = -1
+    for (let i = from + 1; i < names.length; i++) {
+      if (matches(names[i] ?? '')) {
+        to = i
+        break
+      }
+    }
+    if (from < 0 || to < 0) return
+    pinScroll()
+    const next = names.filter((n) => n !== name)
+    next.splice(to, 0, name) // after the removal, index `to` is just past the neighbour
+    setNames(next)
+    setNote(`${name} aşağı taşındı: ${to + 1}. sıra`)
+  }
+
+  const moveBottom = (name: string) => {
+    if (names[names.length - 1] === name) return
+    pinScroll()
+    setNames([...names.filter((n) => n !== name), name])
+    setNote(`${name} en alta taşındı`)
+  }
+
   const moveTop = (name: string) => {
     if (names[0] === name) return
     pinScroll()
@@ -106,7 +132,7 @@ function ModalBody({ kind }: { kind: Kind }) {
     closeManage()
   }
 
-  const iconButton = 'grid h-10 w-10 shrink-0 place-items-center rounded-lg text-[var(--subtle)] transition hover:bg-white/10 hover:text-accent disabled:pointer-events-none disabled:opacity-30'
+  const iconButton = 'grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[var(--subtle)] transition hover:bg-white/10 hover:text-accent disabled:pointer-events-none disabled:opacity-30'
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/70 backdrop-blur-sm sm:place-items-center sm:p-4" onClick={closeManage} role="presentation">
@@ -170,11 +196,17 @@ function ModalBody({ kind }: { kind: Kind }) {
                     <span className={`min-w-0 flex-1 truncate text-sm ${on ? 'text-[var(--ink-2)]' : 'text-[var(--subtle)]'}`}>{name}</span>
                     <span className="shrink-0 text-xs tabular-nums text-[var(--subtle)]">{(counts.get(name) ?? 0).toLocaleString('tr-TR')}</span>
                   </label>
-                  <button type="button" onClick={() => moveUp(name)} disabled={firstShown === name} aria-label={`${name} bir yukarı taşı`} title="Yukarı taşı" className={iconButton}>
+                  <button type="button" onClick={() => moveTop(name)} disabled={names[0] === name} aria-label={`${name} en üste taşı`} title="En üste" className={iconButton}>
+                    <ChevronsUp size={18} />
+                  </button>
+                  <button type="button" onClick={() => moveUp(name)} disabled={firstShown === name} aria-label={`${name} bir yukarı taşı`} title="1 yukarı" className={iconButton}>
                     <ChevronUp size={18} />
                   </button>
-                  <button type="button" onClick={() => moveTop(name)} disabled={names[0] === name} aria-label={`${name} en üste taşı`} title="En üste taşı" className={iconButton}>
-                    <ChevronsUp size={18} />
+                  <button type="button" onClick={() => moveDown(name)} disabled={lastShown === name} aria-label={`${name} bir aşağı taşı`} title="1 aşağı" className={iconButton}>
+                    <ChevronDown size={18} />
+                  </button>
+                  <button type="button" onClick={() => moveBottom(name)} disabled={names[names.length - 1] === name} aria-label={`${name} en alta taşı`} title="En alta" className={iconButton}>
+                    <ChevronsDown size={18} />
                   </button>
                 </li>
               )

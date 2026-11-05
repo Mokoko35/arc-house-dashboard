@@ -1,6 +1,7 @@
 import { cacheGet, cachePut } from './db'
 import { LoadError } from './load'
 import { hashId } from './m3u'
+import { normalizeCategory } from './sanitize'
 import type { Channel, XtreamLogin } from './types'
 import { normalizeServer } from './xtream'
 
@@ -63,7 +64,7 @@ async function api(login: XtreamLogin, action: string, params: Record<string, st
 const memory = new Map<string, unknown>()
 
 /** Looks in memory, then IndexedDB (until `ttlMs` is over), and only then asks the portal. */
-async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
+export async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
   if (memory.has(key)) return memory.get(key) as T
   try {
     const hit = await cacheGet<T>(key)
@@ -141,6 +142,8 @@ export interface Details {
   duration?: string
   rating?: number
   trailer?: string
+  /** TheMovieDB id, when the portal knows it. It makes the TMDB match exact. */
+  tmdbId?: string
 }
 
 function readDetails(info: Rec): Details {
@@ -155,6 +158,7 @@ function readDetails(info: Rec): Details {
     year: yearOf(info),
     duration: durationOf(info),
     rating: ratingOf(info),
+    tmdbId: /^\d+$/.test(str(info.tmdb_id) ?? str(info.tmdb) ?? '') ? (str(info.tmdb_id) ?? str(info.tmdb)) : undefined,
     trailer: trailer ? (trailer.startsWith('http') ? trailer : `https://www.youtube.com/watch?v=${encodeURIComponent(trailer)}`) : undefined,
   }
 }
@@ -290,7 +294,7 @@ export function getSeriesCatalog(login: XtreamLogin, playlistId: string): Promis
         name,
         url: `xtream-series:${id}`,
         logo: image(s.cover) ?? image(s.backdrop_path),
-        group: names.get(str(s.category_id) ?? ''),
+        group: normalizeCategory(names.get(str(s.category_id) ?? '')),
         seriesId: id,
         description: text(s.plot),
         rating: ratingOf(s),

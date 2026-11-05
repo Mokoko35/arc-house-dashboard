@@ -50,7 +50,10 @@ export interface Media {
   toggleFavorite: (channel: Channel) => void
   current: Channel | null
   /** Starts a channel, film or episode in the large player window. */
-  play: (channel: Channel) => void
+  play: (channel: Channel, options?: { fullscreen?: boolean }) => void
+  /** A film or episode asked to start in full screen. The player takes it once and clears it. */
+  fullscreenPending: boolean
+  fullscreenHandled: () => void
   playerMode: PlayerMode
   /** True on Live TV and Favorites when the window is wide enough: the player sits in the page instead of a window. */
   inlineHost: boolean

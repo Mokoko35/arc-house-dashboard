@@ -9,6 +9,7 @@ import { PinDialog } from './PinDialog'
 import { hasPin } from './pin'
 import { Row, Section, Segmented, Toggle } from './SettingsControls'
 import { ThemePicker } from './ThemePicker'
+import { testTmdbKey } from './tmdb'
 import { useMedia } from './useMedia'
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -18,6 +19,50 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'categories', label: 'Kategori Yönetimi' },
   { id: 'themes', label: 'Temalar' },
 ]
+
+/** TMDB key: posters, summaries and cast looked up by the cleaned title. Off until a key is entered. */
+function TmdbSettings() {
+  const { prefs, updatePrefs } = useMedia()
+  const [state, setState] = useState<'idle' | 'testing' | 'ok' | 'bad'>('idle')
+
+  const test = async () => {
+    setState('testing')
+    setState((await testTmdbKey(prefs.tmdbKey)) ? 'ok' : 'bad')
+  }
+
+  return (
+    <Section title="Film ve dizi bilgileri (TMDB)" description="Listedeki başlık temizlenir ve TMDB'de aranır. Doğru afiş, özet, oyuncular ve puan film ve dizi sayfalarında görünür.">
+      <Row label="TMDB anahtarı" hint="themoviedb.org'da ücretsiz hesap açıp Ayarlar > API bölümünden anahtarı (API Key veya Read Access Token) al. Yalnızca bu cihazda saklanır. Boş bırakırsan yalnızca portalın kendi bilgileri kullanılır.">
+        <div className="flex w-full flex-col gap-2 sm:w-72">
+          <input
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            value={prefs.tmdbKey}
+            onChange={(e) => {
+              updatePrefs({ tmdbKey: e.target.value.trim() })
+              setState('idle')
+            }}
+            placeholder="TMDB anahtarı"
+            aria-label="TMDB anahtarı"
+            className="field"
+          />
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => void test()} disabled={!prefs.tmdbKey || state === 'testing'} className="btn-ghost !min-h-9 text-xs">
+              {state === 'testing' ? 'Deneniyor...' : 'Anahtarı dene'}
+            </button>
+            {state === 'ok' && <span role="status" className="text-sm text-[var(--success)]">Anahtar çalışıyor.</span>}
+            {state === 'bad' && (
+              <span role="alert" className="text-sm text-danger">
+                Anahtar kabul edilmedi.
+              </span>
+            )}
+          </div>
+        </div>
+      </Row>
+    </Section>
+  )
+}
 
 /** Hide adult content. Switching it either way, and changing the PIN, asks for the 4-digit PIN. */
 function AdultFilter() {
@@ -86,6 +131,7 @@ function General() {
     <div className="space-y-5">
       <PlaylistManager />
       <AdultFilter />
+      <TmdbSettings />
       <Section title="Görünüm">
         <Row label="Kart boyutu" hint="Kanal ve poster ızgaralarının yoğunluğu.">
           <Segmented<CardSize>

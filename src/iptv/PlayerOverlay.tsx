@@ -18,7 +18,7 @@ interface Box {
  * - mini: docked in the corner while you browse.
  */
 export function PlayerOverlay() {
-  const { current, playerMode, inlineHost, inlineSlot, minimizePlayer, expandPlayer, stopPlayer, prefs, channelNav } = useMedia()
+  const { current, playerMode, inlineHost, inlineSlot, minimizePlayer, expandPlayer, stopPlayer, prefs, channelNav, fullscreenPending, fullscreenHandled } = useMedia()
   const mode = !current || playerMode === 'closed' ? 'closed' : inlineHost ? 'inline' : playerMode
   const modal = mode === 'modal'
   const inline = mode === 'inline'
@@ -64,6 +64,8 @@ export function PlayerOverlay() {
       autoplay={prefs.autoplay}
       className="rounded-none"
       compact={mode === 'mini'}
+      wantFullscreen={fullscreenPending}
+      onFullscreenHandled={fullscreenHandled}
       onPrev={!(mode === 'mini') && channelNav ? () => channelNav.step(-1) : undefined}
       onNext={!(mode === 'mini') && channelNav ? () => channelNav.step(1) : undefined}
       navLabel={channelNav ? `${channelNav.position} / ${channelNav.total}` : undefined}

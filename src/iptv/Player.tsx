@@ -47,6 +47,9 @@ interface CoreProps {
   navLabel?: string
   /** Buttons shown at the top right with the other controls. */
   topRight?: ReactNode
+  /** Enter full screen as soon as this player shows, for a film or episode the user just chose to play. */
+  wantFullscreen?: boolean
+  onFullscreenHandled?: () => void
 }
 
 function ControlButton({ label, onClick, children, className = '' }: { label: string; onClick: () => void; children: ReactNode; className?: string }) {
@@ -66,7 +69,7 @@ function ControlButton({ label, onClick, children, className = '' }: { label: st
   )
 }
 
-function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, navLabel, topRight }: CoreProps) {
+function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, navLabel, topRight, wantFullscreen = false, onFullscreenHandled }: CoreProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const hideTimer = useRef<number | undefined>(undefined)
@@ -231,6 +234,14 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     if (document.fullscreenElement) void document.exitFullscreen()
     else void el.requestFullscreen().catch(() => undefined)
   }, [])
+  // Full screen on request. The click on "Oynat" is the user action the browser needs; it stays valid for a few seconds,
+  // which is longer than it takes this player to appear.
+  useEffect(() => {
+    if (!wantFullscreen) return
+    if (!compact && !document.fullscreenElement) void wrapRef.current?.requestFullscreen().catch(() => undefined)
+    onFullscreenHandled?.()
+  }, [wantFullscreen, compact, onFullscreenHandled])
+
   useEffect(() => {
     const onChange = () => setFullscreen(document.fullscreenElement === wrapRef.current)
     document.addEventListener('fullscreenchange', onChange)
@@ -389,9 +400,11 @@ interface PlayerProps {
   onNext?: () => void
   navLabel?: string
   topRight?: ReactNode
+  wantFullscreen?: boolean
+  onFullscreenHandled?: () => void
 }
 
-export function Player({ channel, autoplay = true, className = 'rounded-2xl border border-white/10', compact = false, onPrev, onNext, navLabel, topRight }: PlayerProps) {
+export function Player({ channel, autoplay = true, className = 'rounded-2xl border border-white/10', compact = false, onPrev, onNext, navLabel, topRight, wantFullscreen, onFullscreenHandled }: PlayerProps) {
   if (!channel) {
     return (
       <div className="grid aspect-video w-full place-items-center rounded-2xl border border-dashed border-white/15 bg-black/40 p-6 text-center">
@@ -403,5 +416,5 @@ export function Player({ channel, autoplay = true, className = 'rounded-2xl bord
     )
   }
   // No key on purpose: the same <video> and wrapper stay mounted for every channel, so full screen survives a channel change.
-  return <PlayerCore channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} />
+  return <PlayerCore channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} wantFullscreen={wantFullscreen} onFullscreenHandled={onFullscreenHandled} />
 }

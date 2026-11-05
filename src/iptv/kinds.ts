@@ -63,7 +63,7 @@ export const FAVORITES = '\u0000favorites'
 /** "TR | Disney+" -> ["TR", "Disney+"], so the title can show a path. */
 export function categoryCrumbs(name: string): string[] {
   const parts = name
-    .split(/\s*[|>»]\s*/)
+    .split(/\s*[|>»▸]\s*/)
     .map((p) => p.trim())
     .filter(Boolean)
   return parts.length > 0 ? parts : [name]

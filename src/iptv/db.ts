@@ -1,3 +1,4 @@
+import { sanitizeChannel } from './sanitize'
 import type { Channel, PlaylistMeta } from './types'
 
 /** Playlists can hold tens of thousands of channels, which is too big for localStorage, so they live in IndexedDB. */
@@ -45,7 +46,9 @@ export async function listPlaylists(): Promise<PlaylistMeta[]> {
 }
 
 export async function getChannels(playlistId: string): Promise<Channel[]> {
-  return (await run<Channel[]>([CHANNELS], 'readonly', (tx) => tx.objectStore(CHANNELS).get(playlistId))) ?? []
+  const stored = (await run<Channel[]>([CHANNELS], 'readonly', (tx) => tx.objectStore(CHANNELS).get(playlistId))) ?? []
+  // Lists saved by an older version may hold attributes in titles or a split category; repair them on the way out.
+  return stored.map(sanitizeChannel)
 }
 
 export async function savePlaylist(meta: PlaylistMeta, channels: Channel[]): Promise<void> {

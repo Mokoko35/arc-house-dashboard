@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadErrorText } from './load'
+import { sanitizeChannel } from './sanitize'
 import type { Channel, XtreamLogin } from './types'
 import { type VodArt, getSeriesCatalog, getVodArt } from './xtreamApi'
 
@@ -35,7 +36,7 @@ export function useCatalog(login: XtreamLogin | null, playlistId: string | null)
       if (cancelled) return
       setLoaded({
         key,
-        series: series.status === 'fulfilled' && series.value.length > 0 ? series.value : null,
+        series: series.status === 'fulfilled' && series.value.length > 0 ? series.value.map(sanitizeChannel) : null,
         art: art.status === 'fulfilled' ? art.value : NO_ART,
         error: series.status === 'rejected' ? loadErrorText(series.reason) : null,
       })

@@ -1,3 +1,4 @@
+import { cleanTitle, normalizeCategory, parseAttributes, splitExtinf } from './sanitize'
 import type { Channel } from './types'
 
 /** Small stable hash so a channel keeps the same id across refreshes. */
@@ -5,15 +6,6 @@ export function hashId(input: string): string {
   let h = 5381
   for (let i = 0; i < input.length; i++) h = ((h << 5) + h + input.charCodeAt(i)) | 0
   return (h >>> 0).toString(36)
-}
-
-function parseAttributes(line: string): Record<string, string> {
-  const attrs: Record<string, string> = {}
-  for (const m of line.matchAll(/([A-Za-z0-9_-]+)="([^"]*)"/g)) {
-    const key = m[1]
-    if (key) attrs[key.toLowerCase()] = m[2] ?? ''
-  }
-  return attrs
 }
 
 export function looksLikeM3U(text: string): boolean {
@@ -33,17 +25,19 @@ export function parseM3U(raw: string): Channel[] {
     if (!line) continue
 
     if (line.startsWith('#EXTINF')) {
-      const comma = line.indexOf(',')
-      const title = comma >= 0 ? line.slice(comma + 1).trim() : ''
-      const attrs = parseAttributes(comma >= 0 ? line.slice(0, comma) : line)
+      // The comma that ends the attributes is the first one outside quotes: a name or a logo address can hold commas.
+      const { head, title } = splitExtinf(line)
+      const attrs = parseAttributes(head)
+      // Some lists leak attributes into the title; take the group and logo from there when the line itself lacks them.
+      const leaked = parseAttributes(title)
       pending = {
-        name: title || attrs['tvg-name'] || 'Adsız kanal',
-        logo: attrs['tvg-logo'] || undefined,
-        group: attrs['group-title'] || extGroup || undefined,
-        tvgId: attrs['tvg-id'] || undefined,
+        name: cleanTitle(title) || cleanTitle(attrs['tvg-name'] ?? '') || 'Adsız kanal',
+        logo: attrs['tvg-logo'] || leaked['tvg-logo'] || undefined,
+        group: normalizeCategory(attrs['group-title'] || leaked['group-title'] || extGroup),
+        tvgId: attrs['tvg-id'] || leaked['tvg-id'] || undefined,
       }
     } else if (line.startsWith('#EXTGRP:')) {
-      extGroup = line.slice(8).trim() || undefined
+      extGroup = normalizeCategory(line.slice(8)) 
     } else if (line.startsWith('#')) {
       continue
     } else if (/^[a-z][a-z0-9+.-]*:\/\//i.test(line)) {

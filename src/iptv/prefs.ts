@@ -18,6 +18,8 @@ export interface Prefs {
   bufferSeconds: 10 | 30 | 60
   hardwareDecoding: boolean
   epgUrl: string
+  /** TheMovieDB key, to look up posters and summaries by title. Empty means off. */
+  tmdbKey: string
   epgRefresh: EpgRefresh
 }
 
@@ -32,6 +34,7 @@ export const DEFAULT_PREFS: Prefs = {
   bufferSeconds: 30,
   hardwareDecoding: true,
   epgUrl: '',
+  tmdbKey: '',
   epgRefresh: '24',
 }
 
@@ -56,6 +59,7 @@ export function loadPrefs(): Prefs {
       autoplay: typeof raw.autoplay === 'boolean' ? raw.autoplay : d.autoplay,
       bufferSeconds: raw.bufferSeconds === 10 || raw.bufferSeconds === 30 || raw.bufferSeconds === 60 ? raw.bufferSeconds : d.bufferSeconds,
       hardwareDecoding: typeof raw.hardwareDecoding === 'boolean' ? raw.hardwareDecoding : d.hardwareDecoding,
+      tmdbKey: typeof raw.tmdbKey === 'string' ? raw.tmdbKey.trim().slice(0, 600) : d.tmdbKey,
       epgUrl: typeof raw.epgUrl === 'string' ? raw.epgUrl.slice(0, 500) : d.epgUrl,
       epgRefresh: raw.epgRefresh === 'off' || raw.epgRefresh === '6' || raw.epgRefresh === '12' || raw.epgRefresh === '24' ? raw.epgRefresh : d.epgRefresh,
     }

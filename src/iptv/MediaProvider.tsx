@@ -162,8 +162,12 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const wide = useMediaQuery('(min-width: 1024px)')
   const inlineHost = wide && (route.page === 'live' || route.page === 'favorites')
 
+  const [fullscreenPending, setFullscreenPending] = useState(false)
+  const fullscreenHandled = useCallback(() => setFullscreenPending(false), [])
+
   const play = useCallback(
-    (c: Channel) => {
+    (c: Channel, options?: { fullscreen?: boolean }) => {
+      setFullscreenPending(options?.fullscreen === true)
       setPlaying({ playlistId: active?.id ?? null, channel: c })
       // "mini" is what it becomes when you leave an in-page player behind: it keeps playing in the corner.
       setPlayerMode(inlineHost ? 'mini' : 'modal')
@@ -174,14 +178,15 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const openItem = useCallback(
     (c: Channel, list?: Channel[]) => {
       const kind = kindOf(c)
-      if (kind !== 'live' && xtream && (c.seriesId || kind === 'movie')) setDetail(c)
+      // Films get a detail page when the portal or TMDB can describe them; portal series always do.
+      if (kind !== 'live' && ((xtream && (c.seriesId || kind === 'movie')) || (kind === 'movie' && prefs.tmdbKey))) setDetail(c)
       else {
         // The list the channel was picked from (a category, a search) is what previous/next walks through.
         if (kind === 'live') setQueue(list ?? [])
         play(c)
       }
     },
-    [xtream, play],
+    [xtream, play, prefs.tmdbKey],
   )
 
   const current = playing && playing.playlistId === (active?.id ?? null) && !(prefs.adultFilter && isAdult(playing.channel)) ? playing.channel : null
@@ -241,6 +246,8 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       setPlayerMode('closed')
     },
     play,
+    fullscreenPending,
+    fullscreenHandled,
     prefs,
     updatePrefs,
     countryOptions,
