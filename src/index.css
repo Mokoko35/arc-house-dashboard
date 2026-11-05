@@ -345,6 +345,13 @@ a:focus-visible {
   animation: shimmer 1.4s linear infinite;
 }
 
+/* Subtitles: white on a dark box, easy to read over any picture. */
+video::cue {
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  font-size: 1.15em;
+}
+
 /* The player fills the screen in full screen mode instead of keeping its 16:9 box. */
 .player-surface:fullscreen {
   aspect-ratio: auto;

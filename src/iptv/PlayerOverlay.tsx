@@ -85,6 +85,7 @@ export function PlayerOverlay() {
       onPrev={!(mode === 'mini') && channelNav ? () => channelNav.step(-1) : undefined}
       onNext={!(mode === 'mini') && channelNav ? () => channelNav.step(1) : undefined}
       onBack={(modal || inline) && vod ? goBack : undefined}
+      trackMenus={vod && mode !== 'mini'}
       navLabel={channelNav ? `${channelNav.position} / ${channelNav.total}` : undefined}
       topRight={
         modal || (inline && vod && isFull) ? (

@@ -163,6 +163,7 @@ function MovieDetail({ channel, login, playlistId }: { channel: Channel; login: 
         rating: details?.rating ?? channel.rating,
         description: details?.plot ?? channel.description,
         subtitle: [details?.year, details?.duration, details?.genre].filter(Boolean).join(' · ') || undefined,
+        subtitleTracks: details?.subtitles,
       },
       { fullscreen: true },
     )

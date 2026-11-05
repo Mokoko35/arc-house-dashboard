@@ -1,3 +1,10 @@
+/** A subtitle file the portal offers (WebVTT or SRT). */
+export interface SubtitleSource {
+  url: string
+  label?: string
+  lang?: string
+}
+
 export interface Channel {
   /** Stable id derived from the stream URL. */
   id: string
@@ -15,6 +22,8 @@ export interface Channel {
   subtitle?: string
   /** Score out of 10, when the portal provides one. */
   rating?: number
+  /** Subtitle files the portal lists for this film or episode. */
+  subtitleTracks?: SubtitleSource[]
 }
 
 export type SourceKind = 'url' | 'xtream' | 'file' | 'text'

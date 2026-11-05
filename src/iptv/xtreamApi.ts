@@ -2,7 +2,8 @@ import { cacheGet, cachePut } from './db'
 import { LoadError } from './load'
 import { hashId } from './m3u'
 import { normalizeCategory } from './sanitize'
-import type { Channel, XtreamLogin } from './types'
+import { readSubtitleSources } from './tracks'
+import type { Channel, SubtitleSource, XtreamLogin } from './types'
 import { normalizeServer } from './xtream'
 
 /* ------------------------------------------------------------------ */
@@ -144,6 +145,8 @@ export interface Details {
   trailer?: string
   /** TheMovieDB id, when the portal knows it. It makes the TMDB match exact. */
   tmdbId?: string
+  /** Subtitle files the portal lists. */
+  subtitles?: SubtitleSource[]
 }
 
 function readDetails(info: Rec): Details {
@@ -159,6 +162,7 @@ function readDetails(info: Rec): Details {
     duration: durationOf(info),
     rating: ratingOf(info),
     tmdbId: /^\d+$/.test(str(info.tmdb_id) ?? str(info.tmdb) ?? '') ? (str(info.tmdb_id) ?? str(info.tmdb)) : undefined,
+    subtitles: readSubtitleSources(info.subtitles ?? info.subtitle).length > 0 ? readSubtitleSources(info.subtitles ?? info.subtitle) : undefined,
     trailer: trailer ? (trailer.startsWith('http') ? trailer : `https://www.youtube.com/watch?v=${encodeURIComponent(trailer)}`) : undefined,
   }
 }
@@ -184,6 +188,7 @@ export interface Episode {
   image?: string
   rating?: number
   url: string
+  subtitles?: SubtitleSource[]
 }
 
 export interface SeriesDetails extends Details {
@@ -235,6 +240,7 @@ export function getSeriesInfo(login: XtreamLogin, playlistId: string, seriesId: 
         image: image(epInfo.movie_image),
         rating: ratingOf(epInfo),
         url: episodeUrl(login, id, str(raw.container_extension) ?? 'mp4'),
+        subtitles: readSubtitleSources(epInfo.subtitles ?? epInfo.subtitle),
       }
       ;(episodes[season] ??= []).push(ep)
     }
@@ -265,6 +271,7 @@ export function episodeChannel(series: Channel, ep: Episode, poster: string | un
     group: series.group,
     description: ep.plot ?? series.description,
     subtitle: `Sezon ${ep.season} · Bölüm ${ep.number} · ${ep.title}`,
+    subtitleTracks: ep.subtitles && ep.subtitles.length > 0 ? ep.subtitles : undefined,
   }
 }
 

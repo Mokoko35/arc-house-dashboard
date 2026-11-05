@@ -1,8 +1,53 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Loader2, Maximize, Minimize, Pause, Play, SkipBack, SkipForward, Tv, Volume2, VolumeX } from 'lucide-react'
+import { AlertTriangle, Captions, Loader2, Maximize, Minimize, Pause, Play, SkipBack, SkipForward, Speaker, Tv, Volume2, VolumeX } from 'lucide-react'
+import { TrackMenu } from './TrackMenu'
+import { EMPTY_TRACKS, type TrackInfo, labelFor, loadSubtitle } from './tracks'
 import type { Channel } from './types'
 
 type Engine = 'hls' | 'ts' | 'native'
+type HlsInstance = import('hls.js').default
+
+/* Audio languages and subtitles: from the HLS playlist when there is one, otherwise from the video element itself. */
+interface NativeAudioTrack {
+  enabled: boolean
+  label: string
+  language: string
+}
+interface NativeAudioList {
+  length: number
+  [index: number]: NativeAudioTrack | undefined
+  addEventListener: (type: string, listener: () => void) => void
+  removeEventListener: (type: string, listener: () => void) => void
+}
+const nativeAudio = (video: HTMLVideoElement): NativeAudioList | undefined => (video as unknown as { audioTracks?: NativeAudioList }).audioTracks
+const textTracksOf = (video: HTMLVideoElement): TextTrack[] => Array.from(video.textTracks).filter((t) => t.kind === 'subtitles' || t.kind === 'captions')
+
+function readTracks(video: HTMLVideoElement, hls: HlsInstance | null): TrackInfo {
+  if (hls) {
+    return {
+      audio: hls.audioTracks.map((t, i) => ({ label: labelFor(t.name, t.lang, `Ses ${i + 1}`) })),
+      audioIndex: hls.audioTrack,
+      subs: hls.subtitleTracks.map((t, i) => ({ label: labelFor(t.name, t.lang, `Altyazı ${i + 1}`) })),
+      subIndex: hls.subtitleTrack,
+    }
+  }
+  const audio: TrackInfo['audio'] = []
+  let audioIndex = -1
+  const list = nativeAudio(video)
+  for (let i = 0; list && i < list.length; i++) {
+    const t = list[i]
+    if (!t) continue
+    audio.push({ label: labelFor(t.label, t.language, `Ses ${i + 1}`) })
+    if (t.enabled) audioIndex = i
+  }
+  const texts = textTracksOf(video)
+  return {
+    audio,
+    audioIndex,
+    subs: texts.map((t, i) => ({ label: labelFor(t.label, t.language, `Altyazı ${i + 1}`) })),
+    subIndex: texts.findIndex((t) => t.mode === 'showing'),
+  }
+}
 
 function engineFor(url: string): Engine {
   const path = url.split('?')[0]?.toLowerCase() ?? ''
@@ -52,6 +97,8 @@ interface CoreProps {
   onFullscreenHandled?: () => void
   /** Right-click in full screen. Meant as "back": leave full screen and close the player. */
   onBack?: () => void
+  /** Show the audio language and subtitle menus (films and episodes). */
+  trackMenus?: boolean
 }
 
 function ControlButton({ label, onClick, children, className = '' }: { label: string; onClick: () => void; children: ReactNode; className?: string }) {
@@ -71,7 +118,7 @@ function ControlButton({ label, onClick, children, className = '' }: { label: st
   )
 }
 
-function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, navLabel, topRight, wantFullscreen = false, onFullscreenHandled, onBack }: CoreProps) {
+function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, navLabel, topRight, wantFullscreen = false, onFullscreenHandled, onBack, trackMenus = false }: CoreProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const hideTimer = useRef<number | undefined>(undefined)
@@ -87,6 +134,9 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
   const [duration, setDuration] = useState(0)
   const [awake, setAwake] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
+  const hlsRef = useRef<HlsInstance | null>(null)
+  const [tracks, setTracks] = useState<TrackInfo>(EMPTY_TRACKS)
+  const [menuOpen, setMenuOpen] = useState(false)
   const blocked = mixedContent(channel.url)
   const isVod = Number.isFinite(duration) && duration > 0
 
@@ -124,7 +174,9 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     const onNativeError = () => {
       if (video.error) fail('Bu yayın oynatılamadı. Adres geçersiz olabilir veya kodek tarayıcıda desteklenmiyor.')
     }
+    const refreshTracks = () => setTracks(readTracks(video, hlsRef.current))
     const onEmptied = () => {
+      setTracks(EMPTY_TRACKS)
       setTime(0)
       setDuration(0)
       setPaused(video.paused)
@@ -141,6 +193,12 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     video.addEventListener('timeupdate', onTime)
     video.addEventListener('durationchange', onDuration)
     video.addEventListener('emptied', onEmptied)
+    video.addEventListener('loadedmetadata', refreshTracks)
+    const audioList = nativeAudio(video)
+    for (const type of ['addtrack', 'removetrack', 'change']) {
+      audioList?.addEventListener(type, refreshTracks)
+      video.textTracks.addEventListener(type, refreshTracks)
+    }
 
     const start = async () => {
       const engine = engineFor(channel.url)
@@ -162,9 +220,16 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
                 fail('Yayına bağlanılamadı. Sunucu kapalı olabilir veya tarayıcıya erişimi engelliyor (CORS).')
               }
             })
+            hlsRef.current = hls
+            for (const event of [Hls.Events.MANIFEST_PARSED, Hls.Events.AUDIO_TRACKS_UPDATED, Hls.Events.AUDIO_TRACK_SWITCHED, Hls.Events.SUBTITLE_TRACKS_UPDATED, Hls.Events.SUBTITLE_TRACK_SWITCH] as const) {
+              hls.on(event, refreshTracks)
+            }
             hls.loadSource(channel.url)
             hls.attachMedia(video)
-            teardown = () => hls.destroy()
+            teardown = () => {
+              hlsRef.current = null
+              hls.destroy()
+            }
           } else {
             video.src = channel.url
           }
@@ -200,6 +265,11 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
       video.removeEventListener('timeupdate', onTime)
       video.removeEventListener('durationchange', onDuration)
       video.removeEventListener('emptied', onEmptied)
+      video.removeEventListener('loadedmetadata', refreshTracks)
+      for (const type of ['addtrack', 'removetrack', 'change']) {
+        audioList?.removeEventListener(type, refreshTracks)
+        video.textTracks.removeEventListener(type, refreshTracks)
+      }
       teardown?.()
       video.removeAttribute('src')
       video.load()
@@ -207,6 +277,71 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
     // volume and muted are applied once here; later changes go straight to the element.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel.url, blocked, autoplay])
+
+  // Subtitle files the portal lists are downloaded, turned into WebVTT and added as extra subtitle choices (all off to start with).
+  useEffect(() => {
+    const video = videoRef.current
+    const sources = channel.subtitleTracks
+    if (!video || blocked || !sources || sources.length === 0) return
+    let disposed = false
+    const added: { el: HTMLTrackElement; url: string }[] = []
+    void (async () => {
+      for (const [i, source] of sources.slice(0, 12).entries()) {
+        const url = await loadSubtitle(source.url).catch(() => null)
+        if (!url) continue
+        if (disposed) {
+          URL.revokeObjectURL(url)
+          continue
+        }
+        const el = document.createElement('track')
+        el.kind = 'subtitles'
+        el.label = source.label ?? labelFor(undefined, source.lang, `Altyazı ${i + 1}`)
+        if (source.lang) el.srclang = source.lang
+        el.src = url
+        video.appendChild(el)
+        el.track.mode = 'disabled'
+        added.push({ el, url })
+      }
+      if (!disposed) setTracks(readTracks(video, hlsRef.current))
+    })()
+    return () => {
+      disposed = true
+      for (const { el, url } of added) {
+        el.remove()
+        URL.revokeObjectURL(url)
+      }
+    }
+  }, [channel.url, channel.subtitleTracks, blocked])
+
+  const selectAudio = (index: number) => {
+    const video = videoRef.current
+    if (!video) return
+    const hls = hlsRef.current
+    if (hls) hls.audioTrack = index
+    else {
+      const list = nativeAudio(video)
+      for (let i = 0; list && i < list.length; i++) {
+        const t = list[i]
+        if (t) t.enabled = i === index
+      }
+    }
+    setTracks(readTracks(video, hls))
+  }
+
+  const selectSubtitle = (index: number) => {
+    const video = videoRef.current
+    if (!video) return
+    const hls = hlsRef.current
+    if (hls) {
+      hls.subtitleDisplay = index >= 0
+      hls.subtitleTrack = index
+    } else {
+      textTracksOf(video).forEach((t, i) => {
+        t.mode = i === index ? 'showing' : 'disabled'
+      })
+    }
+    setTracks(readTracks(video, hls))
+  }
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current
@@ -307,7 +442,7 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
   const message = blocked
     ? 'Bu yayın http:// ile başlıyor. https sayfalarda tarayıcı bunu engeller. Windows masaüstü uygulamasında veya http:// ile açılan sayfada oynar.'
     : error
-  const show = !compact && (awake || paused || message !== null)
+  const show = !compact && (awake || paused || message !== null || menuOpen)
   const hideCursor = !compact && !show && !paused
 
   return (
@@ -403,6 +538,12 @@ function PlayerCore({ channel, autoplay, className, compact, onPrev, onNext, nav
                   </span>
                 )}
               </div>
+              {trackMenus && tracks.audio.length > 1 && (
+                <TrackMenu icon={<Speaker size={20} aria-hidden="true" />} label="Ses dili" options={tracks.audio} selected={tracks.audioIndex} onSelect={selectAudio} onOpenChange={setMenuOpen} />
+              )}
+              {trackMenus && tracks.subs.length > 0 && (
+                <TrackMenu icon={<Captions size={21} aria-hidden="true" />} label="Altyazı" options={tracks.subs} selected={tracks.subIndex} offLabel="Kapalı" onSelect={selectSubtitle} onOpenChange={setMenuOpen} />
+              )}
               <ControlButton label={fullscreen ? 'Tam ekrandan çık (F)' : 'Tam ekran (F)'} onClick={toggleFullscreen}>
                 {fullscreen ? <Minimize size={20} aria-hidden="true" /> : <Maximize size={20} aria-hidden="true" />}
               </ControlButton>
@@ -435,9 +576,10 @@ interface PlayerProps {
   wantFullscreen?: boolean
   onFullscreenHandled?: () => void
   onBack?: () => void
+  trackMenus?: boolean
 }
 
-export function Player({ channel, autoplay = true, className = 'rounded-2xl border border-white/10', compact = false, onPrev, onNext, navLabel, topRight, wantFullscreen, onFullscreenHandled, onBack }: PlayerProps) {
+export function Player({ channel, autoplay = true, className = 'rounded-2xl border border-white/10', compact = false, onPrev, onNext, navLabel, topRight, wantFullscreen, onFullscreenHandled, onBack, trackMenus }: PlayerProps) {
   if (!channel) {
     return (
       <div className="grid aspect-video w-full place-items-center rounded-2xl border border-dashed border-white/15 bg-black/40 p-6 text-center">
@@ -449,5 +591,5 @@ export function Player({ channel, autoplay = true, className = 'rounded-2xl bord
     )
   }
   // No key on purpose: the same <video> and wrapper stay mounted for every channel, so full screen survives a channel change.
-  return <PlayerCore channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} wantFullscreen={wantFullscreen} onFullscreenHandled={onFullscreenHandled} onBack={onBack} />
+  return <PlayerCore channel={channel} autoplay={autoplay} className={className} compact={compact} onPrev={onPrev} onNext={onNext} navLabel={navLabel} topRight={topRight} wantFullscreen={wantFullscreen} onFullscreenHandled={onFullscreenHandled} onBack={onBack} trackMenus={trackMenus} />
 }
